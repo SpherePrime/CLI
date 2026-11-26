@@ -33,9 +33,9 @@ cd scripts && npm install && node audit.mjs http://localhost:5173 --dark --out q
 
 Then open every screenshot it produced. Automation finds mechanical defects; your eyes judge the rest.
 
-In Prime Desktop, also run the interaction pass as one `browser_run` scenario: all widths above, every control, overlays, inputs and states, with a screenshot at each state. Run it in one call, review the log and screenshots, fix, and rerun the same scenario. Do not click through the page with separate browser_* calls.
+In Prime Desktop, also run the interaction pass as one `browser_run` scenario: widths relevant to the target product (skip mobile phone widths 320/390 px for desktop/PC-only software; include both desktop and mobile for responsive websites and mobile web apps), every control, overlays, inputs and states, with screenshots at the visual states worth inspecting. Run it in one call, review the log and screenshots, fix, and rerun the same scenario. Do not click through the page with separate browser_* calls.
 
-Close-ups are part of the gate. A full-page screenshot reaches the model heavily downscaled, so it shows composition only. Capture details separately: each section and component by selector with `padding` 16-32 px, `zoom: 2` for small text, icons, borders and focus rings, `clip` for the places where blocks meet and for the right edge at 320/390 px, and `fullPage` with `tiles` for long pages. Hover, focus, open and error states get close-ups too. Every visual defect is confirmed on a close-up and cites it.
+Start with normal unzoomed overview screenshots. Do NOT use zoom by default or unnecessarily: take a targeted close-up (`selector` with `padding` 16–32 px, `clip`, `zoom`, or `fullPage` with `tiles` for long pages) ONLY when you actually need to inspect a small element, fine text/icon, tight border, or a suspected visual defect that is unclear at normal scale. Every confirmed visual defect cites its screenshot.
 
 ## 2. Layout integrity — P0
 

@@ -133,10 +133,16 @@ func TestPrimeGameDevBuiltinHiddenAndMaterializes(t *testing.T) {
 	require.NotContains(t, xml, "prime-gamedev")
 
 	root := t.TempDir()
+	stalePreset := filepath.Join(root, "prime-gamedev", "scripts", "presets", "teleport_collision_probe.mjs")
+	require.NoError(t, os.MkdirAll(filepath.Dir(stalePreset), 0o755))
+	require.NoError(t, os.WriteFile(stalePreset, []byte("stale"), 0o644))
 	directory, err := MaterializeBuiltin("prime-gamedev", root)
 	require.NoError(t, err)
+	_, err = os.Stat(stalePreset)
+	require.True(t, os.IsNotExist(err))
 	for _, relative := range []string{
 		"SKILL.md",
+		"references/asset-sources.md",
 		"scripts/package.json",
 		"scripts/extract_frames.mjs",
 		"scripts/web_bot_runner.mjs",

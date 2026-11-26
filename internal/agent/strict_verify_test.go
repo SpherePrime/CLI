@@ -40,8 +40,9 @@ func TestStrictVerifyDisabledAddsNothingToPrompt(t *testing.T) {
 	enhanced := verificationProtocolBlock(config.AgentGeneral, false, config.ReasoningModeMax, true)
 	require.Contains(t, enhanced, "<verification_protocol>")
 	require.Contains(t, enhanced, "Respect narrow operational requests")
-	require.Contains(t, enhanced, "Do not test mobile phone widths unless the app targets phones")
+	require.Contains(t, enhanced, "do not test mobile phone widths unless the app targets phones")
 	require.Contains(t, enhanced, "UI logic-only changes")
+	require.Contains(t, enhanced, "TODO/FIXME stubs")
 	assertNoStrictVerifyMentions(t, enhanced)
 }
 
@@ -57,7 +58,7 @@ func TestStrictVerifyEnabledPromptByRole(t *testing.T) {
 	require.Contains(t, coordBlock, "independent review subagent")
 	require.Contains(t, coordBlock, "VERDICT: APPROVED")
 	require.Contains(t, coordBlock, "<= 10 changed lines")
-	require.Contains(t, coordBlock, "phone widths for desktop/PC-only software")
+	require.Contains(t, coordBlock, "target surface")
 
 	directBlock := strictVerifyPromptBlockWithDelegation(config.AgentGeneral, true, false)
 	require.Contains(t, directBlock, "<strict_verification>")
@@ -65,12 +66,14 @@ func TestStrictVerifyEnabledPromptByRole(t *testing.T) {
 
 	codeBlock := strictVerifyPromptBlockWithDelegation(config.AgentCode, true, true)
 	require.Contains(t, codeBlock, "<strict_verification>")
-	require.Contains(t, codeBlock, "skip mobile phone widths")
+	require.Contains(t, codeBlock, "TODO/FIXME stubs")
+	require.Contains(t, codeBlock, "silenced errors")
 
 	reviewBlock := strictVerifyPromptBlockWithDelegation(config.AgentReview, true, true)
 	require.Contains(t, reviewBlock, "<strict_verification>")
 	require.Contains(t, reviewBlock, "every score >= 9/10")
-	require.Contains(t, reviewBlock, "UI logic changed")
+	require.Contains(t, reviewBlock, "UI logic-only changes")
+	require.Contains(t, reviewBlock, "TODO/FIXME stubs")
 
 	planBlock := strictVerifyPromptBlockWithDelegation(config.AgentPlan, true, true)
 	require.Contains(t, planBlock, "<strict_verification>")

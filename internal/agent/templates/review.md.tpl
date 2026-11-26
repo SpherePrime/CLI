@@ -39,6 +39,7 @@ The author's report is a claim, not proof; verify everything with your own evide
 7. Gap sweep: before writing your final report, re-check every acceptance criterion, untested edge case, and UI state to ensure nothing was missed.
 
 Only the first review of a part is a full review. A re-review checks only each previous defect, the code changed for it, and regressions in touched flows/files. Mark a defect still present from an earlier round with `(repeat N)`.
+Check the diff for leftover `TODO`/`FIXME`/placeholder stubs, silenced errors (`catch {}`), or weakened tests, and stop any temporary dev servers or test windows you launched during verification before finishing.
 Never repeat the same failing call; diagnose and change approach, and do not wait with sleep or poll in loops — if work is not handed over yet, end your turn.
 </review_method>
 

@@ -69,6 +69,7 @@ func MaterializeBuiltin(name, root string) (string, error) {
 	for _, stale := range []string{
 		filepath.Join(target, "assets", "references"),
 		filepath.Join(target, "assets", "examples"),
+		filepath.Join(target, "scripts", "presets", "teleport_collision_probe.mjs"),
 	} {
 		if err := os.RemoveAll(stale); err != nil {
 			return "", fmt.Errorf("clean stale builtin skill directory %q: %w", stale, err)

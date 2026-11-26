@@ -59,66 +59,12 @@ Follow these fundamentals proactively while designing and coding (for a third-pa
 4. **Own Game vs. Mod Scope:**
    - **Full game you are building:** put all game elements on the Showcase scene for multi-angle visual inspection, cover all world objects in code collision tests, and verify gameplay loop, weapons/crosshair, UI/HUD, win/loss/restart states, and difficulty balance on the live bot run.
    - **Mod / plugin / addon for an existing third-party game:** put **only the mod's own elements** on the Showcase scene, and test only the mod's own colliders and functionality — do NOT audit or try to fix unrelated bugs in the base game.
-5. **Sourcing, adapting & polishing textures, 3D models (realistic & stylized), 3D weapons, character animations & audio (DEFAULT = DOWNLOAD & ADAPT, NEVER RELY ON ONE SITE):**
-   - **Default rule — download first, craft from scratch ONLY on request or gap:** unless the user explicitly asks you to create models, weapons, textures, or animations from scratch, **by default download ready assets** instead of hand-building crude primitives:
-     1. First check and reuse **native engine and project asset libraries**:
-        - **Unreal Engine (UE4/UE5):** existing project `Content/` & Vault packs, `Starter Content` / `Engine Content`, **Fab / Quixel Megascans** (`https://www.fab.com` — entire 23,000+ AAA photogrammetry library free on Fab: rocks, vegetation, architecture, debris, props, PBR surfaces), **MetaHuman**, and Unreal's free **Game Animation Sample Project** (Manny + 500 AAA animations).
-        - **Unity:** installed packages + **Unity Asset Store Free** (`https://assetstore.unity.com/?free=true`).
-        - **Godot:** project assets + **Godot Asset Library** (`https://godotengine.org/asset-library/asset`).
-     2. Next pull from the **curated category directory below**, combining sources by engine, style, and asset category (never pulling every asset from a single site).
-     3. You may also **search the web freely** (`web_search`, `agentic_fetch`, `fetch`, `download`) whenever you need a specific realistic model, weapon, texture, or animation not in the curated list (verify license & format).
-     4. Craft assets yourself (via `generate_image`, procedural shaders/canvas scripts, or custom geometry) **only when the user explicitly asks you to make them**, or when no suitable asset exists after searching.
-   - **Always adapt & fix downloaded models, weapons, textures, and animations (ZERO "good enough" tolerance):**
-     - **Models, weapons & textures:** fix real-world scale (metres), forward orientation & weapon grip/muzzle pivot so weapons sit properly in character hands, missing/broken PBR maps (Albedo/Normal/Roughness/Metallic/AO), UV seams, and texture resolution for target performance.
-     - **Downloaded animations — ALWAYS fit to the specific character model and fix if even slightly off:** retarget bones/skeleton cleanly to the model, fix foot-ground contact (no floating or sinking feet), root motion / locomotion speed matching (no foot sliding), shoulder/wrist/limb twisting, weapon hand-socket alignment, and loop/blend transitions. **If an animation looks bad or even slightly awkward, edit/fix the animation (keyframes, bone weights, retarget curves, IK, speed/blends) or replace it with a cleaner clip** and inspect key poses/motion until it looks genuinely smooth and natural.
-   - **Match format and resolution to the target platform:**
-     - **Desktop / Native engines (Unreal, Unity, Godot, Bevy/Rust, C++):** prefer engine-native packs / **FBX** (Unreal/Unity) or **GLB/glTF** (Godot/Bevy/Blender) and 2K–4K PBR maps; verify humanoid skeleton compatibility (Unreal Mannequin / Unity Humanoid / Mixamo / Mesh2Motion).
-     - **Browser / WebGL (Three.js, Babylon, Phaser):** prefer lightweight **GLB/glTF** and 512px–1K `.webp`/`.png`/`.jpg` textures instead of heavy 8K files.
-   - **Curated Asset Source Directory by Style & Category (starting points — expand via web search when needed):**
-     - **Realistic 3D models & photogrammetry scans** (`.glb`, `.gltf`, `.fbx`, `.obj`, `.blend`):
-       - **Fab / Quixel Megascans** (`https://www.fab.com`) — AAA photorealistic photogrammetry props, architecture, foliage, rocks, debris, and PBR surfaces.
-       - **Poly Haven Models** (`https://polyhaven.com/models`) — 520+ CC0 photorealistic props, furniture, and nature assets (no login, direct API, GLB/FBX/BLEND).
-       - **3D Valley** (`https://3dvalley.com`) — unified CC0 search across 9,500+ standardized `.glb` models from Poly Haven, ambientCG, and Kenney.
-       - **Open Source 3D Assets** (`https://opensource3dassets.com`) — 990+ CC0 `.glb` realistic/game models and environments.
-       - **Smithsonian 3D Digitization** (`https://3d.si.edu`) — CC0 museum-grade photogrammetry & LiDAR scans (statues, artifacts, spacecraft, fossils) in GLB/OBJ.
-       - **CGTrader Free** (`https://www.cgtrader.com/free-3d-models`), **TurboSquid Free** (`https://www.turbosquid.com/Search/3D-Models/free`), **Sketchfab Free Photogrammetry / CC0** (`https://sketchfab.com/features/free-3d-models`), and **Polycam** (`https://polycam.ai`) — realistic vehicles, buildings, props, and real-world scans (verify license per asset).
-     - **3D weapons (guns, rifles, pistols, swords, bows, melee, sci-fi & weapon textures)** (`.glb`, `.fbx`, `.obj`):
-       - **Grab3D Weapons** (`https://grab3d.com/models/weapons/`) — CC0 swords, shields, armor, and action weapons in GLB/FBX/OBJ/BLEND, no login.
-       - **Cinevva Free 3D Weapons** (`https://app.cinevva.com/game-assets/free-3d-weapon-models`) — CC0 guns, swords, bows, and fantasy weapons in `.glb`, scaled in metres and ready to attach to character hands.
-       - **Sloyd Weapons & Guns** (`https://www.sloyd.ai/free-3d-models/weapons-armor` and `https://www.sloyd.ai/free-3d-models/weapons-armor/guns-military`) — CC-BY 4.0 firearms, rifles, swords, and armor in GLB/FBX/OBJ.
-       - **Meshy Free Weapons & Military** (`https://www.meshy.ai/category/weapons-military`) — large catalog of weapons, firearms, blades, and tactical gear in FBX/GLB/OBJ.
-       - **Itch.io Free 3D Weapons (FBX/GLB)** (`https://itch.io/game-assets/free/tag-3d/tag-fbx/tag-weapons`) — low-poly and modular firearm/sword packs.
-       - **Kenney 3D Blaster/Weapon Kits** (`https://kenney.nl/assets?t=3d`), **Quaternius Weapons** (`https://quaternius.com`), **Poly Pizza** (`https://poly.pizza`), and **CGTrader / Sketchfab Free CC** — stylized and realistic firearms/melee weapons.
-     - **3D character animations & auto-rigging (idle, walk, run, jump, crouch, shoot, reload, melee, hit, death)** (`.fbx`, `.glb`, `.bvh`):
-       - **Mesh2Motion** (`https://mesh2motion.org`) — open-source Mixamo alternative (no account needed): 160+ CC0 human animations (locomotion, combat, climbing, zombies) plus rigging for humans, animals, and monsters, exporting directly to **GLB and FBX**.
-       - **Adobe Mixamo** (`https://www.mixamo.com`) — largest free humanoid mocap library (thousands of idle/walk/run/shoot/reload/sword/death clips) + auto-rigger for Unreal, Unity, Godot, and Blender (FBX).
-       - **Quaternius & Kenney Pre-Animated Characters** (`https://quaternius.com`, `https://kenney.nl/assets?t=3d`) — CC0 characters shipping with dozens of built-in game animations in GLB & FBX.
-       - **KayKit Character Animations** (`https://kaylousberg.itch.io`) — CC0 rigged fantasy/sci-fi characters and shared animation libraries in FBX/glTF.
-       - **Gobkit Freebies** (`https://gobkit.com/freebies`) — 400+ CC0 rigged/animated `.glb` game characters and props, no login.
-       - **CMU Mocap Converted Packs** (`https://rancidmilk.itch.io/free-character-animations`) — public-domain CMU motion capture converted to ready-to-use FBX/glTF humanoid animations.
-       - **MoCap Online Free Packs** (`https://mocaponline.com/blogs/mocap-news/free-3d-animations`), **Reallusion AccuRIG / ActorCore Free** (`https://actorcore.reallusion.com`), and **Free3D Rigged FBX** (`https://free3d.com/3d-models/rigged-fbx-characters`) — FBX mocap & auto-rigging for Unreal/Unity/Blender.
-     - **Stylized & low-poly 3D models (characters, environments, props, vehicles)** (`.glb`, `.fbx`, `.obj`):
-       - **Grab3D Free 3D Models** (`https://grab3d.com/free-gltf-models/`) — 2,500+ CC0 GLB/FBX/OBJ models with embedded PBR textures, no login.
-       - **Polyfork** (`https://polyfork.dev` / `https://github.com/lucas-martinic/polyfork-catalog`) — 3,600+ free low-poly `.glb` models across 38 themed sets with a direct `catalog.json`, no login.
-       - **Quaternius** (`https://quaternius.com`), **Kenney 3D** (`https://kenney.nl/assets?t=3d`), **Poly Pizza** (`https://poly.pizza`), **KayKit** (`https://kaylousberg.itch.io`), and **Itch.io Free GLB/FBX Packs** (`https://itch.io/game-assets/free/tag-glb`).
-     - **Realistic seamless PBR textures & materials** (floors, walls, brick, concrete, asphalt, wood, metal, stone, grass, fabric — color/normal/roughness/AO maps):
-       - **AmbientCG** (`https://ambientcg.com`) — 2,000+ CC0 PBR materials, HDRIs, and models (1K–8K), no login.
-       - **Poly Haven Textures** (`https://polyhaven.com/textures`) — 860+ high-craft CC0 PBR surfaces (1K–8K), no login (direct API at `api.polyhaven.com`).
-       - **3D Valley** (`https://3dvalley.com/textures`) — unified CC0 search across 3,800+ PBR materials from Poly Haven, AmbientCG, CGBookcase, and TextureCan.
-       - **CGBookcase** (`https://www.cgbookcase.com/textures`), **ShareTextures** (`https://www.sharetextures.com`), **TextureCan** (`https://www.texturecan.com`), and **Meshy Free Textures** (`https://www.meshy.ai/textures`) — CC0 seamless PBR sets, no login.
-     - **Stylized / hand-painted seamless PBR textures:**
-       - **StylizedTextures.com** (`https://stylizedtextures.com`) — 100% free CC0 seamless stylized 4K PBR packs, no sign-up.
-       - **FreeStylized.com** (`https://freestylized.com`) — free stylized textures, skyboxes, and 3D packs.
-       - **3DTextures.me** (`https://3dtextures.me`) — CC0 seamless stylized & realistic PBR textures.
-     - **2D sprites, pixel art, tilesets & backgrounds** (`.png`, `.svg`, sprite sheets):
-       - **Kenney 2D** (`https://kenney.nl/assets?t=2d`), **Itch.io CC0 Pixel Art & Sprites** (`https://itch.io/game-assets/free/tag-cc0/tag-pixel-art`), **GameArt2D Freebies** (`https://www.gameart2d.com/freebies.html`), **OpenGameArt** (`https://opengameart.org`), **CraftPix Freebies** (`https://craftpix.net/freebies/`), and **DOTOWN** (`https://dotown.maeda-design-room.net`).
-     - **HUD, UI panels, crosshairs & icons:**
-       - **Game-icons.net** (`https://game-icons.net`) — 4,000+ CC-BY SVG/PNG icons for weapons, ammo, skills, inventory, and reticles.
-       - **Kenney UI & Crosshair Packs** (`https://kenney.nl/assets?t=ui`) — CC0 HUD frames, buttons, cursors, and crosshair packs.
-     - **Skyboxes, lighting (HDRI) & audio (SFX/music):**
-       - **Poly Haven HDRIs** (`https://polyhaven.com/hdris`) and **AmbientCG HDRIs** (`https://ambientcg.com`) — CC0 skyboxes and IBL lighting for any 3D engine.
-       - **Kenney Audio** (`https://kenney.nl/assets?t=audio`), **Freesound** (`https://freesound.org`), **OpenGameArt Audio** (`https://opengameart.org/content/free-sounds`), and **Itch.io CC0 Music/SFX** (`https://itch.io/game-assets/free/tag-cc0/tag-music`).
-   - **Every engine-library, downloaded, and custom asset (including 3D weapons & animated characters) MUST be placed on the Showcase scene and photographed from multiple sides.** If any asset or animation looks ugly, cheap, mismatched, wrongly scaled, or even slightly awkward, fix, adapt, or remake it yourself and re-shoot the Showcase.
+5. **Sourcing, adapting & polishing assets (DEFAULT = DOWNLOAD & ADAPT — NEVER RELY ON ONE SITE):**
+   - Unless the user explicitly asks you to craft models, weapons, textures, or animations from scratch, **by default download and adapt ready assets**:
+     1. Check **native engine & project libraries first** (Unreal Engine: `Content/`, Vault, `Starter Content` / `Engine Content`, **Fab / Quixel Megascans**, **MetaHuman**, **Game Animation Sample**; Unity: Asset Store Free; Godot: AssetLib).
+     2. Read `prime://skills/prime-gamedev/references/asset-sources.md` with `view` when sourcing web assets — it lists curated sources by style & category (realistic 3D & photogrammetry, 3D weapons, character animations & auto-rigging, stylized 3D, realistic & stylized PBR textures, 2D/HUD/HDRI/audio) clearly split into **`[Direct / API / No-Login]`** (first priority for automated `download`, never waste turns scraping login walls!) vs **`[Account / Engine Plugin / Manual]`**. You may also search the web freely when needed.
+     3. Craft from scratch **only** when the user explicitly requests it or no suitable asset exists.
+   - **Always adapt & fix downloaded models, weapons, textures, and animations:** normalize metre scale, weapon hand-grip/muzzle pivot, PBR maps, and skeleton retargeting (foot-ground contact, root motion, limb twisting, blends/timing). **If any downloaded asset or animation looks bad or even slightly awkward, edit/fix or replace it yourself** and verify every element on the Showcase scene.
 6. **Reuse built-in presets & save context with `<gamedev_library>`.** Built-in reusable presets already ship under `<skill_directory>/scripts/presets/` (`showcase_capture_probe.mjs`, `collision_suite_probe.mjs`, `weapon_crosshair_probe.mjs`, `physics_bounds_probe.mjs`, `balance_and_state_probe.mjs`) and are automatically indexed by `library.mjs lookup`. Always query `library.mjs lookup` first, read only the 1–2 matching scripts, and save new or improved reusable scripts into the proper sorted folder (`features/`, `physics/`, `engines/`, `elements/`, `games/`) without deleting existing ones.
 7. **Bot liveness, hard timeouts & anti-hang (MANDATORY):**
    - Never leave a live bot or game running blindly in the background. Always run bot scripts with a hard timeout (`--bot-timeout-ms`, bounded step loops) and clean teardown so a broken script can never hang an app open forever.
