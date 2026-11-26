@@ -28,16 +28,20 @@ Follow these fundamentals proactively while designing and coding (for a third-pa
    - Implement reliable ground checks, clean handling of tile/platform seams, stairs, ceilings, and hard map boundaries (plus out-of-bounds kill-zone/recovery).
    - In 3D / third-person views, add camera collision so the camera never clips inside walls or geometry.
    - Keep collision world definitions and step resolution decoupled from rendering so automated code tests can run directly against the real collision engine.
-3. **Weapons, Mandatory Crosshair & Combat (Whenever Combat Exists):**
+3. **Weapons, Mandatory Crosshair, True ADS & Combat (Whenever Combat Exists):**
    - **Crosshair is mandatory:** if the game includes any gun, bow, throwable, turret, or aimed spell, include a crisp, high-contrast crosshair/reticle (screen center for 3D/FPS, cursor-aligned for 2D/top-down) with visual feedback for firing/spread, hitmarker on hit, and reload state.
-   - Align the shot/ray origin with the crosshair; provide visible tracers/projectiles, muzzle flash, recoil/kick, cooldown, ammo/reload loop, and fair hitboxes.
+   - **True Aim Down Sights (ADS) — NEVER just fake camera zoom:** whenever a first-person/3D weapon has sights, optics, or ADS aiming, smoothly move the weapon model to center and align the camera line of sight directly through the weapon's actual iron sights, red-dot, or scope (with synchronized sight alignment, subtle FOV shift, and reduced spread) — do NOT just zoom the camera FOV while leaving the weapon hanging off to the side.
+   - Align the shot/ray origin with the crosshair/sights and weapon muzzle; provide visible tracers/projectiles, muzzle flash, recoil/kick, cooldown, ammo/reload loop, and fair hitboxes.
    - For melee combat, provide a readable swing arc/telegraph, knockback, and brief invulnerability frames (i-frames) after taking damage so the player is never deleted in a single frame.
 4. **Controls & Game Feel:**
    - Normalize diagonal movement so diagonal speed is not faster; keep input snappy; add coyote time and jump buffering for platformers.
    - Give tangible feedback for actions: hit flashes, particles, subtle screen shake, animations, and clear pickup/damage/death cues.
-5. **Fair Enemies & Zero Softlocks:**
-   - Telegraph enemy attacks with visible wind-up animations/indicators; avoid unfair instant one-shots or spawning enemies directly on top of the player.
-   - Guarantee every room/level is completable with no permanent softlocks or inescapable pits.
+5. **Complete, Animated, Armed Enemies & Zero Softlocks:**
+   - **Never build bare, empty-handed enemies that deal invisible damage.** Match enemies to the game's genre and plan them upfront:
+     - Equip combat enemies with **visible weapons/gear properly attached to their hand sockets** (guns, rifles, swords, bows, staves, claws) — verify enemies holding their weapons on the Showcase scene too.
+     - Give enemies **real animations** (idle, walk/run, aim/wind-up, fire/swing, hit reaction, death).
+     - Give enemies **visible, physically grounded attacks** — in shooters, enemies MUST actually aim and fire visible projectiles/tracers with muzzle flashes from their weapon barrel; in melee/action/RPG games, enemies MUST telegraph and execute visible weapon swings, spells, or lunge attacks so the player can read and dodge/take cover.
+   - Avoid unfair instant one-shots or spawning enemies directly on top of the player; guarantee every room/level is completable with no permanent softlocks or inescapable pits.
 6. **Visual Readability, Assets & Clean HUD:**
    - Maintain clear figure-ground contrast so player, enemies, projectiles, and interactive items stand out immediately against floors and walls.
    - Prevent z-fighting (coplanar overlapping surfaces), stretched UVs, and pitch-black unlit areas.
