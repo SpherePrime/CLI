@@ -93,10 +93,11 @@ Read **only** the 1–2 matching scripts returned by `lookup` (for example `pres
 2. Expose a lightweight inspection hook (`window.__SHOWCASE__.listElements()` and `window.__SHOWCASE__.focusElement(id, angle)` for web, or CLI/IPC cycling for native) supporting multiple sides (`front`, `right`, `back`, `left`, `quarter` for 3D; close-up + key animation/weapon states for 2D).
 3. Run a fast automated photo pass (`presets/showcase_capture_probe.mjs`, or `browser_run` + `browser_screenshot` in the built-in browser, or native engine frame dump) to photograph every element from all sides quickly.
 4. **Assembled Map / Level Sweep (for full games/levels):** capture screenshots of the **assembled map/level** from overhead/flyover angles and gameplay-camera viewpoints at key areas (skip for minimal single-screen 2D puzzles where the main screen already shows the whole board).
-5. Inspect **every** generated Showcase photo, contact sheet, and assembled-map screenshot with `view` (when image viewing is supported) for:
-   - ugly/broken models, weapon/ADS flaws, crooked enemy weapon grips or animations, mismatched art style/scale, bad UVs/seams, missing textures, z-fighting;
-   - floating or sunk props, gaps between walls/floors/corners, pitch-black corners or blown-out lighting, harsh repeating tiling.
-   Fix or remake any flawed element or level placement and re-shoot until clean.
+5. **Targeted close-ups of small detailed elements (ONLY when needed):** if a small prop or fine detail (e.g. keyboard, weapon sight, monitor/desk prop, instrument panel, doorway seam) is too small to judge cleanly on wide frames, capture a focused close-up screenshot of that specific element — never zoom aimlessly on large clear areas.
+6. Inspect **every** generated Showcase photo, contact sheet, assembled-map screenshot, and targeted close-up with **ruthless self-critique** via `view`:
+   - reject bare-minimum scenes with just a few scattered objects and reject sloppy primitive shortcuts for small props (such as a flat slab instead of a real keyboard or crude boxes for room items) — every visible object down to small props must be recognizable, well-proportioned, and adequately detailed (download/adapt quality models or craft real detail);
+   - catch ugly/broken models, weapon/ADS flaws, crooked enemy weapon grips or animations, mismatched art style/scale, bad UVs/seams, missing textures, z-fighting, floating/sunk props, wall/floor gaps, pitch-black corners, or harsh tiling.
+   Fix or remake any flawed element, small prop, or level placement yourself and re-shoot until genuinely polished.
 
 ## Step 3 (Stage B): Deterministic Automated Collision Tests in Code (NO Teleporting)
 

@@ -66,6 +66,7 @@ func TestStrictVerifyEnabledPromptByRole(t *testing.T) {
 
 	codeBlock := strictVerifyPromptBlockWithDelegation(config.AgentCode, true, true)
 	require.Contains(t, codeBlock, "<strict_verification>")
+	require.Contains(t, codeBlock, "ruthless self-critique")
 	require.Contains(t, codeBlock, "TODO/FIXME stubs")
 	require.Contains(t, codeBlock, "silenced errors")
 

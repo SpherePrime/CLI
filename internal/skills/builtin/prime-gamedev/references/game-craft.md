@@ -15,13 +15,16 @@ Always calibrate effort to what the user is actually building:
 
 1. **Coherent Art Direction (No Visual Mashup):**
    - Pick ONE visual direction and palette upfront in the plan (e.g. grounded realism, stylized low-poly, crisp pixel art) and unify downloaded/custom asset tones, roughness, scale, and lighting so every asset belongs in the same world.
-2. **Assembled Map / Level Visual Sweep (Part of Stage A):**
-   - In addition to photographing isolated elements on the Showcase scene, capture screenshots of the **assembled map/level** (overhead/flyover views + gameplay-camera views at key zones) and inspect them with `view` for:
+2. **Assembled Map / Level Visual Sweep & Small-Prop Craftsmanship (Part of Stage A):**
+   - Never settle for a bare-minimum scene with a few objects dropped on a floor, and **never fake small detailed props with lazy flat slabs or crude boxes** (for example, a flat plank instead of a real keyboard with keys/chassis, or bare blocks for monitors, mugs, lamps, shelves, switches, or gear). Every visible object — down to small room/desk props — must be recognizable, properly proportioned, and adequately detailed (prefer downloading/adapting quality models, or model real geometry and materials cleanly).
+   - In addition to photographing isolated elements on the Showcase scene, capture screenshots of the **assembled map/level** (overhead/flyover views + gameplay-camera views at key zones) and take **targeted close-up screenshots of small detailed elements ONLY when needed** (e.g. a keyboard, weapon sight, panel, or seam that cannot be judged cleanly on wide shots), inspecting all shots with **ruthless self-critique** via `view` for:
+     - bare/empty areas or sloppy primitive shortcuts for small props;
      - floating props or objects sunk halfway into floors/walls;
      - gaps/cracks between walls, corners, and floor tiles exposing the void/skybox;
      - broken scale relative to the player/camera (waist-high doors, giant chairs, oversized props);
      - pitch-black unlit rooms, blown-out white hotspots, or detached shadows;
      - harsh repeating texture tiling across large floors/walls (break up with decals, lighting, props, or UV variation).
+   - If a room, small prop, animation, or gameplay area looks rough, empty, or half-baked on screenshots, refine or replace it yourself instead of declaring "it runs without errors, done".
 3. **Real Hit Reactions & Death / Destruction (Never Vanish in 1 Frame):**
    - Every attackable/interactive entity reacts visibly and audibly at the **impact point** (hit-flinch/recoil, sparks/blood/debris particles, sound, hitmarker/feedback).
    - Destroyed enemies/units/objects MUST play a real **death animation, fall/ragdoll, collapse, or genre-appropriate explosion/shatter** — NEVER delete the mesh in a single frame. Immediately disable collision and damage on death so corpses never block movement or hurt the player, keep remains briefly, then fade/pool cleanly within an object cap.

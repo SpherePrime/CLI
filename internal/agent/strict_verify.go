@@ -84,14 +84,14 @@ Strict Verify mode is ENABLED (mandatory quality gate).
 <strict_verification>
 Strict Verify mode is ENABLED (direct mode without delegation).
 - Skip for pure questions and narrow operational requests with 0 code edits (execute and return immediately unless the command fails).
-- For any code or artifact change, verify strictly with fresh evidence AFTER your final edit: zero TODO/FIXME stubs or silenced errors, green build/lint/tests, and real-surface execution (appropriate widths for the product, interactive clicks for UI logic, unzoomed overview screenshots for visual edits). Fix every defect and repeat until a clean pass completes.
+- For any code or artifact change, run a ruthless self-critique before finishing (do not stop at a bare minimum or half-baked result — if anything looks rough, incomplete, or sloppy, refine it yourself first) and verify strictly with fresh evidence AFTER your final edit: zero TODO/FIXME stubs or silenced errors, green build/lint/tests, and real-surface execution (appropriate widths for the product, interactive clicks for UI logic, unzoomed overview screenshots for visual edits). Fix every defect and repeat until a clean pass completes.
 </strict_verification>`
 	case config.AgentCode:
 		return `
 
 <strict_verification>
 Strict Verify mode is ENABLED:
-- Deliver production-ready code with zero TODO/FIXME stubs, placeholders, mock fallbacks, or silenced errors.
+- Deliver production-ready, fully finished work with zero TODO/FIXME stubs, placeholders, mock fallbacks, or silenced errors. Run a ruthless self-critique before handing off: never stop at a bare/sloppy first draft — if any part looks rough or half-baked, refine it yourself first.
 - Run fresh verification AFTER your final edit matched to the target surface and review your full diff for edge cases and regressions before handing off for strict independent review.
 </strict_verification>`
 	case config.AgentReview:
@@ -99,7 +99,7 @@ Strict Verify mode is ENABLED:
 
 <strict_verification>
 Strict Verify mode is ENABLED (` + "`REVIEW DEPTH: strict`" + `):
-- Approve ONLY with zero critical defects, zero major defects, no noticeable minor defects, no leftover TODO/FIXME stubs or silenced errors, and every score >= 9/10 backed by fresh evidence collected AFTER the author's last edit.
+- Approve ONLY with zero critical defects, zero major defects, no noticeable minor defects, no half-baked or bare-minimum shortcuts, no leftover TODO/FIXME stubs or silenced errors, and every score >= 9/10 backed by fresh evidence collected AFTER the author's last edit.
 - Match checks to the target surface: skip mobile phone widths (320/375 px) for desktop/PC-only apps; verify real clicks/inputs/console for UI logic-only changes without redundant screenshots; for visual changes inspect unzoomed overview screenshots first and use zoom ONLY when a small detail or suspected defect genuinely needs closer inspection.
 </strict_verification>`
 	case config.AgentPlan:
