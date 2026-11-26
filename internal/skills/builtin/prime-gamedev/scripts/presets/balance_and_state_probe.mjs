@@ -2,6 +2,7 @@ export async function runBalanceAndStateProbe({
   page,
   helpers,
   pauseKey = 'Escape',
+  minFps = 50,
   restartSelector = '[data-action="restart"], button:has-text("Restart"), button:has-text("Заново")'
 }) {
   const issues = []
@@ -40,6 +41,11 @@ export async function runBalanceAndStateProbe({
   const scoreAfterRestart = Number(afterRestart?.score ?? Number.NaN)
   if (Number.isFinite(scoreAfterRestart) && scoreAfterRestart > 0) {
     issues.push(`Score did not reset cleanly on restart (score=${scoreAfterRestart})`)
+  }
+
+  const sampledFps = Number(midPlay?.fps ?? Number.NaN)
+  if (Number.isFinite(sampledFps) && sampledFps > 0 && sampledFps < minFps) {
+    issues.push(`FPS dropped below target (${sampledFps} < ${minFps})`)
   }
 
   helpers.recordDifficultySample({

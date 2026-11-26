@@ -42,6 +42,9 @@ Follow these fundamentals proactively while designing and coding (for a third-pa
    - Maintain clear figure-ground contrast so player, enemies, projectiles, and interactive items stand out immediately against floors and walls.
    - Prevent z-fighting (coplanar overlapping surfaces), stretched UVs, and pitch-black unlit areas.
    - Keep HUD clean and non-obstructive (HP, weapon/ammo, goal/score) with concise control hints on start/pause screens.
+7. **Performance Budget (`>= 50 FPS`) & Visual/Graphics Settings (Plan Upfront):**
+   - Design for smooth performance: target **at least 50 FPS** during active gameplay (use instancing/batching, object pooling for projectiles/particles, frustum culling/LOD, bounded shadow-casting lights, and appropriately sized textures).
+   - For any medium or large game (especially 3D or visually rich projects), plan and implement **real working Graphics / Quality Settings** accessible from Main Menu and Pause Menu: overall quality preset (`Low / Medium / High`), shadow quality (`Off / Low / Medium / High`), draw distance / LOD / effects & particle density, post-processing / antialiasing, and render scale / DPR cap (plus audio & mouse sensitivity where applicable). Every setting MUST actually change the renderer/performance — never build decorative non-functional toggles.
 
 ## Core QA Rules
 
@@ -191,7 +194,7 @@ node "<skill_directory>/scripts/native_bot_runner.mjs" \
 
 1. Read `report.json` (if any) and `frames/manifest.json`, then inspect gameplay `contactSheets` (`sheet_*.png`) and flagged `frames/frame_XXXX.png` with `view` for:
    - Broken controls, stuck/softlock spots, missing/misaligned crosshair or broken weapon hit/reload behaviour, broken restart state
-   - Runtime/console/WebGL/shader errors, 404 assets, `NaN` physics, and (for full games) unfair difficulty spikes.
+   - Runtime/console/WebGL/shader errors, 404 assets, `NaN` physics, **sustained FPS below 50** (optimize draw calls, shadows, LOD, particles/effects, or textures until `FPS >= 50` and verify real Graphics/Quality Settings work in medium/large games), and (for full games) unfair difficulty spikes.
 2. Fix every defect found and re-verify (Showcase photos for asset/design fixes; code collision test suite for collision fixes; live gameplay video for runtime/gameplay/balance fixes) until clean.
 3. Save new or improved reusable scripts to `<gamedev_library>` sorted by **feature, element, or physics topic** (`--scope feature`, `--scope element`, `--scope physics`, `--scope engine`, `--scope game`) with clear `--summary` and `--tags`. Never delete existing entries.
 4. Remove temporary video/frame run folders from `os.tmpdir()` when finished unless the user requested to keep them.

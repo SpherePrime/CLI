@@ -68,7 +68,11 @@ export function createRuntimeMonitor(page) {
   }
 }
 
-export function createTelemetryTracker({ floorYLimit, stuckThresholdMs = 2500 } = {}) {
+export function createTelemetryTracker({
+  floorYLimit,
+  stuckThresholdMs = 2500,
+  minFpsTarget = 50
+} = {}) {
   const samples = []
   const checkpoints = []
   const difficultySamples = []
@@ -203,6 +207,18 @@ export function createTelemetryTracker({ floorYLimit, stuckThresholdMs = 2500 } 
       fpsValues.length > 0
         ? Number((fpsValues.reduce((sum, v) => sum + v, 0) / fpsValues.length).toFixed(1))
         : null
+    const belowTargetSamples = fpsValues.filter((v) => v < minFpsTarget).length
+    const performanceAnomalies = []
+    if (avgFps !== null && avgFps < minFpsTarget) {
+      performanceAnomalies.push({
+        type: 'low_fps',
+        targetFps: minFpsTarget,
+        avgFps,
+        minFps,
+        belowTargetSamples,
+        detail: `Average FPS (${avgFps}) dropped below the ${minFpsTarget} FPS target (min=${minFps})`
+      })
+    }
 
     return {
       sampleCount: samples.length,
@@ -210,7 +226,13 @@ export function createTelemetryTracker({ floorYLimit, stuckThresholdMs = 2500 } 
       checkpoints,
       difficultySamples,
       physicsAnomalies,
-      fps: { min: minFps, avg: avgFps }
+      performanceAnomalies,
+      fps: {
+        min: minFps,
+        avg: avgFps,
+        target: minFpsTarget,
+        belowTargetSamples
+      }
     }
   }
 
