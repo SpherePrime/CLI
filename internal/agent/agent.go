@@ -846,6 +846,9 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			systemPrompt += reviewPolicyBlock(!a.isSubAgent && hasAgentTool(agentTools), coordinatorReasoningMode(ctx, largeModel.ModelCfg))
 			systemPrompt += verificationProtocolBlock(a.agent.ID, call.StrictVerify, coordinatorReasoningMode(ctx, largeModel.ModelCfg), !a.isSubAgent && hasAgentTool(agentTools))
 			systemPrompt += gameDevPromptBlockForSession(a.agent.ID, call.GameDev, !a.isSubAgent && hasAgentTool(agentTools), call.StrictVerify)
+			if call.GameDev {
+				systemPrompt += gameDevBlenderBlock(a.agent.ID, config.DetectBlenderEnvironment(), hasMCPToolPrefix(agentTools, "mcp_blender_"))
+			}
 		}
 	}
 

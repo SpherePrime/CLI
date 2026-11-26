@@ -370,6 +370,32 @@ func TestOrchestratorPromptsRespectGameDevToggle(t *testing.T) {
 	}
 }
 
+func TestGameDevBlenderBlock(t *testing.T) {
+	noBlender := config.BlenderEnvironment{}
+	require.Empty(t, gameDevBlenderBlock(config.AgentGeneral, noBlender, false))
+	require.Empty(t, gameDevBlenderBlock(config.AgentCode, noBlender, false))
+
+	installed := config.BlenderEnvironment{
+		Installed:      true,
+		ExecutablePath: `C:\Program Files\Blender Foundation\Blender 4.3\blender.exe`,
+	}
+	require.Empty(t, gameDevBlenderBlock(config.AgentReview, installed, true))
+	require.Empty(t, gameDevBlenderBlock(config.AgentExplore, installed, true))
+
+	offerBlock := gameDevBlenderBlock(config.AgentGeneral, installed, false)
+	require.Contains(t, offerBlock, "<blender_3d_workflow>")
+	require.Contains(t, offerBlock, "Blender is installed on this machine")
+	require.Contains(t, offerBlock, "offer once")
+	require.Contains(t, offerBlock, "uvx mcp-for-blender install-addon")
+	require.Contains(t, offerBlock, "Connect to MCP server")
+	require.Contains(t, offerBlock, "primary 3D model editor")
+
+	connectedBlock := gameDevBlenderBlock(config.AgentCode, installed, true)
+	require.Contains(t, connectedBlock, "Blender MCP tools (`mcp_blender_*`) are loaded")
+	require.Contains(t, connectedBlock, "mcp_blender_get_addon_status")
+	require.Contains(t, connectedBlock, "mcp_blender_look")
+}
+
 func TestCoordinatorGameDevContextAndSubAgentPropagation(t *testing.T) {
 	env := testEnv(t)
 	c := newJobCoordinator(t, env)

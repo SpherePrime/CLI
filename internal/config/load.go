@@ -746,6 +746,7 @@ func (c *Config) setDefaults(workingDir, dataDir string) {
 		c.MCP = make(map[string]MCPConfig)
 	}
 	c.addDesktopBrowserMCP(workingDir)
+	c.addDesktopBlenderMCP()
 	c.restrictRemoteWorkspace(workingDir)
 	// Drop orphaned OAuth token entries left behind when a user removes
 	// an MCP from prime.json. See MCPConfig.isOrphanedToken.

@@ -2,8 +2,11 @@ package agent
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/SpherePrime/CLI/internal/config"
+	"github.com/SpherePrime/CLI/vendordeps/fantasy"
 )
 
 type gameDevContextKey struct{}
@@ -135,4 +138,47 @@ First read prime://skills/prime-gamedev/SKILL.md with view, query <gamedev_libra
 	default:
 		return ""
 	}
+}
+
+func hasMCPToolPrefix(tools []fantasy.AgentTool, prefix string) bool {
+	for _, tool := range tools {
+		if strings.HasPrefix(tool.Info().Name, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func gameDevBlenderBlock(agentID string, env config.BlenderEnvironment, hasBlenderMCP bool) string {
+	if !env.Installed && !hasBlenderMCP {
+		return ""
+	}
+	switch agentID {
+	case config.AgentGeneral, config.AgentCode, config.AgentPlan:
+	default:
+		return ""
+	}
+
+	var statusLine string
+	switch {
+	case env.Installed && hasBlenderMCP:
+		statusLine = fmt.Sprintf("Blender is installed on this machine (%s) and Blender MCP tools (`mcp_blender_*`) are loaded.", env.ExecutablePath)
+	case env.Installed:
+		statusLine = fmt.Sprintf("Blender is installed on this machine (%s), while Blender MCP tools are not active yet in this session.", env.ExecutablePath)
+	default:
+		statusLine = "Blender MCP tools (`mcp_blender_*`) are loaded in this session."
+	}
+
+	return `
+
+<blender_3d_workflow>
+` + statusLine + `
+For 3D games, 3D scenes, or 3D props that need modeling, detailing, or editing (skip for 2D games, non-visual code tasks, or trivial lightweight browser shapes where Blender adds no value):
+- If mcp_blender_* tools are loaded, call mcp_blender_get_addon_status first to check whether live Blender is already connected.
+- When live Blender IS connected: use **Blender via mcp_blender_* as your primary 3D model editor** — create custom 3D models and properly detailed small props (keyboards, weapons, furniture, room details), import downloaded GLB/FBX/OBJ models into Blender to fix scale, grip pivots, UVs, geometry, and PBR materials, visually inspect them with mcp_blender_look, and export clean GLB/FBX assets into the project.
+- When Blender is installed locally but NOT connected yet (or Blender MCP is not active): do NOT block work and do NOT force it — politely **offer once** before 3D modeling to connect Blender, with the short exact steps:
+  1. If the addon is not installed yet: run "uvx mcp-for-blender install-addon" (or "mcp-for-blender install-addon") and enable **Edit -> Preferences -> Add-ons -> Interface: MCP for Blender**.
+  2. Open Blender, press N in the 3D Viewport -> open the **MCP for Blender** tab -> click **Connect to MCP server** (and make sure the built-in "blender" server is enabled in Settings -> MCP).
+  3. Tell the user clearly: once they confirm Blender is connected, you will create and refine 3D models directly in Blender; if they prefer to proceed without Blender, respect that immediately and continue with the normal download/adapt workflow without asking again.
+</blender_3d_workflow>`
 }
