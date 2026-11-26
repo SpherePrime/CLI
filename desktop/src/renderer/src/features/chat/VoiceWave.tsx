@@ -1,167 +1,155 @@
 import { useEffect, useRef, useState } from 'react'
 import { LoaderCircle, Mic, X } from 'lucide-react'
-import type { LiveTranscript } from '../../../../shared/stt'
 import { useI18n } from '../../i18n'
-import '../../styles/dictation.css'
 
-const BAR_WIDTH = 2
-const BAR_GAP = 3
-const STEP = BAR_WIDTH + BAR_GAP
-const SCROLL_INTERVAL = 52
-const NOISE_FLOOR = 0.012
-const SILENCE_BASELINE = 0.03
-const LEVEL_GAIN = 4.6
-const MIN_BAR = 2
-const BAR_SCALE = 0.44
-const MIN_CANVAS_BARS = 8
-const INITIAL_BARS = 140
-const MAX_DPR = 2
+const BAR_COUNT = 52
+const BAR_STEP = 5
 
 export function VoiceWave({
   analyser,
   transcribing,
-  onCancel,
-  liveTranscript,
-  compact = false
+  compact = false,
+  onCancel
 }: {
   analyser: AnalyserNode | null
   transcribing: boolean
-  onCancel?: () => void
-  liveTranscript?: LiveTranscript
   compact?: boolean
+  onCancel(): void
 }) {
   const { t } = useI18n()
-  const canvas = useRef<HTMLCanvasElement>(null)
-  const transcriptBox = useRef<HTMLDivElement>(null)
-  const [seconds, setSeconds] = useState(0)
-
-  const committed = liveTranscript?.committed?.trim() || ''
-  const open = liveTranscript?.open?.trim() || ''
-  const tail = liveTranscript?.tail?.trim() || ''
-  const hasLiveText = Boolean(committed || open || tail)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const startedAt = useRef(Date.now())
+  const [elapsed, setElapsed] = useState(0)
 
   useEffect(() => {
+    startedAt.current = Date.now()
+    setElapsed(0)
     if (transcribing) return
-    const started = Date.now()
-    setSeconds(0)
-    const timer = window.setInterval(
-      () => setSeconds(Math.floor((Date.now() - started) / 1000)),
-      250
-    )
+    const timer = window.setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startedAt.current) / 1000))
+    }, 500)
     return () => window.clearInterval(timer)
   }, [transcribing])
 
   useEffect(() => {
-    const el = transcriptBox.current
-    if (!el) return
-    el.scrollTop = el.scrollHeight
-  }, [committed, open, tail])
-
-  useEffect(() => {
-    const el = canvas.current
-    if (!el) return
-    const ctx = el.getContext('2d')
+    const canvas = canvasRef.current
+    if (!canvas || transcribing) return
+    const ctx = canvas.getContext('2d')
     if (!ctx) return
-    const samples = analyser ? new Float32Array(analyser.fftSize) : null
-    const history: number[] = Array(INITIAL_BARS).fill(SILENCE_BASELINE)
-    let raf = 0
-    let lastShift = performance.now()
-    let peak = 0
+
+    const history = new Float32Array(BAR_COUNT)
+    const samples = analyser ? new Uint8Array(analyser.fftSize) : null
+    let frame = 0
+    let lastSample = 0
+    let accent = ''
+    let muted = ''
+    const refreshColors = () => {
+      const style = getComputedStyle(canvas)
+      accent = style.getPropertyValue('--accent').trim() || '#e86c3a'
+      muted = style.getPropertyValue('--secondary').trim() || '#8b8b93'
+    }
+    refreshColors()
+
     const draw = (now: number) => {
-      const rect = el.getBoundingClientRect()
-      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
+      const rect = canvas.getBoundingClientRect()
+      const dpr = window.devicePixelRatio || 1
       const width = Math.max(1, Math.round(rect.width * dpr))
       const height = Math.max(1, Math.round(rect.height * dpr))
-      if (el.width !== width || el.height !== height) {
-        el.width = width
-        el.height = height
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width
+        canvas.height = height
       }
-      if (analyser && samples && !transcribing) {
-        analyser.getFloatTimeDomainData(samples)
-        let sum = 0
-        for (let i = 0; i < samples.length; i++) sum += samples[i] * samples[i]
-        const rms = Math.sqrt(sum / samples.length)
-        const level = rms < NOISE_FLOOR ? 0 : Math.min(1, Math.pow(rms * LEVEL_GAIN, 0.7))
-        if (level > peak) peak = level
+      if (now - lastSample >= 42) {
+        lastSample = now
+        let level = 0
+        if (analyser && samples) {
+          analyser.getByteTimeDomainData(samples)
+          let sum = 0
+          for (let i = 0; i < samples.length; i++) {
+            const v = (samples[i] - 128) / 128
+            sum += v * v
+          }
+          level = Math.min(1, Math.sqrt(sum / samples.length) * 5.2)
+        }
+        history.copyWithin(0, 1)
+        history[BAR_COUNT - 1] = level
       }
-      if (now - lastShift >= SCROLL_INTERVAL) {
-        lastShift = now
-        history.push(transcribing ? SILENCE_BASELINE : Math.max(SILENCE_BASELINE, peak))
-        peak = 0
-        const count = Math.max(MIN_CANVAS_BARS, Math.floor(rect.width / STEP))
-        while (history.length > count) history.shift()
-      }
+
       ctx.clearRect(0, 0, width, height)
-      const color = getComputedStyle(el).color
-      const count = Math.max(MIN_CANVAS_BARS, Math.floor(rect.width / STEP))
       const mid = height / 2
-      const start = Math.max(0, history.length - count)
+      const barW = Math.max(2, Math.round(2 * dpr))
+      const step = Math.max(barW + dpr, Math.floor(width / BAR_COUNT))
+      const count = Math.min(BAR_COUNT, Math.floor(width / step))
+      const startX = Math.floor((width - count * step) / 2)
+      const maxH = height * 0.82
+      const minH = Math.max(2 * dpr, 2.5)
+
       for (let i = 0; i < count; i++) {
-        const value = history[start + i] ?? SILENCE_BASELINE
-        const amplitude = transcribing
-          ? (0.1 + 0.08 * Math.sin(now / 260 + i * 0.25)) * height
-          : Math.max(MIN_BAR * dpr, value * height * BAR_SCALE)
-        const x = i * STEP * dpr
-        const alpha = transcribing ? 0.28 : 0.22 + value * 0.78
-        ctx.fillStyle = color
-        ctx.globalAlpha = alpha
+        const level = history[BAR_COUNT - count + i]
+        const edge = Math.min(1, Math.min(i, count - 1 - i) / 5)
+        const h = Math.max(minH, level * maxH * (0.4 + 0.6 * edge))
+        const x = startX + i * step
+        const y = mid - h / 2
+        ctx.fillStyle = level > 0.06 ? accent : muted
+        ctx.globalAlpha = level > 0.06 ? 0.55 + Math.min(0.45, level * 0.65) : 0.28 * edge
         ctx.beginPath()
-        ctx.roundRect(x, mid - amplitude, BAR_WIDTH * dpr, amplitude * 2, BAR_WIDTH * dpr)
+        ctx.roundRect(x, y, barW, h, barW / 2)
         ctx.fill()
       }
       ctx.globalAlpha = 1
-      raf = requestAnimationFrame(draw)
+      frame = window.requestAnimationFrame(draw)
     }
-    raf = requestAnimationFrame(draw)
-    return () => cancelAnimationFrame(raf)
+
+    frame = window.requestAnimationFrame(draw)
+    return () => window.cancelAnimationFrame(frame)
   }, [analyser, transcribing])
 
-  const time = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+  const minutes = Math.floor(elapsed / 60)
+  const seconds = String(elapsed % 60).padStart(2, '0')
 
   return (
-    <div className={`voice-dictation${compact ? ' compact' : ''}`}>
-      {hasLiveText && (
-        <div
-          ref={transcriptBox}
-          className="voice-live-transcript"
-          role="status"
-          aria-live="polite"
-          aria-label={t('Распознаваемый текст')}
-        >
-          {committed && <span className="voice-live-committed">{committed}</span>}
-          {committed && (open || tail) && ' '}
-          {open && <span className="voice-live-pending">{open}</span>}
-          {open && tail && ' '}
-          {tail && <span className="voice-live-tail">{tail}</span>}
-          {!transcribing && <span className="voice-live-caret" aria-hidden="true" />}
-        </div>
-      )}
-      <div
-        className={`voice-wave${transcribing ? ' transcribing' : ''}${compact ? ' compact' : ''}${hasLiveText ? ' has-live-text' : ''}`}
-        role="status"
-        aria-live="polite"
+    <div
+      className={`voice-wave${transcribing ? ' busy' : ''}${compact ? ' compact' : ''}`}
+      role="status"
+      aria-live="polite"
+    >
+      <button
+        type="button"
+        className="icon"
+        title={t('Отменить запись (Esc)')}
+        aria-label={t('Отменить запись')}
+        onClick={onCancel}
       >
-        {onCancel && (
-          <button
-            type="button"
-            className="icon"
-            title={t('Отменить запись')}
-            aria-label={t('Отменить запись')}
-            onClick={onCancel}
-          >
-            <X size={15} />
-          </button>
+        <X size={15} />
+      </button>
+      <span className="voice-wave-badge" aria-hidden="true">
+        {transcribing ? (
+          <LoaderCircle size={15} className="spin" />
+        ) : (
+          <Mic size={15} />
         )}
-        <span className="voice-wave-symbol" aria-hidden="true">
-          {transcribing ? <LoaderCircle size={15} /> : <Mic size={15} />}
-        </span>
-        <span className="voice-wave-label">
-          <i className="voice-wave-dot" aria-hidden="true" />
-          {transcribing ? t('Распознавание…') : t('Говорите…')}
-        </span>
-        <canvas ref={canvas} aria-hidden="true" />
-        <span className="voice-wave-time">{time}</span>
+      </span>
+      <div className="voice-wave-body">
+        {transcribing ? (
+          <span className="voice-wave-label">{t('Распознавание…')}</span>
+        ) : (
+          <>
+            <span className="voice-wave-dot" aria-hidden="true" />
+            <span className="voice-wave-label">{t('Говорите…')}</span>
+            <canvas
+              ref={canvasRef}
+              className="voice-wave-canvas"
+              style={{ minWidth: BAR_COUNT * BAR_STEP * 0.4 }}
+              aria-hidden="true"
+            />
+          </>
+        )}
       </div>
+      {!transcribing && (
+        <span className="voice-wave-time" aria-label={t('Длительность записи')}>
+          {minutes}:{seconds}
+        </span>
+      )}
     </div>
   )
 }

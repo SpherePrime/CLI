@@ -17,10 +17,10 @@ import { useAudioDevices } from './useAudioDevices'
 import '../../styles/conversation.css'
 
 const ASR_LANGUAGE_OPTIONS: { value: AsrLanguage; label: string }[] = [
-  { value: 'auto', label: 'Авто' },
   { value: 'ru', label: 'Русский' },
   { value: 'en', label: 'Английский' },
-  { value: 'uk', label: 'Украинский' }
+  { value: 'uk', label: 'Украинский' },
+  { value: 'auto', label: 'Авто' }
 ]
 
 export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
@@ -190,7 +190,7 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
 
 function SttSection({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
-  const [language, setLanguage] = useState<AsrLanguage>('auto')
+  const [language, setLanguage] = useState<AsrLanguage>('ru')
   const [asrStatus, setAsrStatus] = useState<AsrStatus>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')

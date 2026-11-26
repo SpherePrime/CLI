@@ -26,7 +26,7 @@ func TestSettingsFromDefaults(t *testing.T) {
 
 	settings := SettingsFrom(nil, nil)
 	require.True(t, settings.Enabled)
-	require.Empty(t, settings.Language)
+	require.Equal(t, "ru", settings.Language)
 	require.Equal(t, DefaultMaxDuration, settings.MaxDurationOr())
 }
 
@@ -50,7 +50,7 @@ func TestSettingsAutoLanguageMeansDetect(t *testing.T) {
 	t.Parallel()
 
 	settings := SettingsFrom(&config.VoiceOptions{Language: "auto"}, nil)
-	require.Empty(t, settings.Language)
+	require.Equal(t, "auto", settings.Language)
 }
 
 func TestDetectPlanReportsMissingRecorder(t *testing.T) {

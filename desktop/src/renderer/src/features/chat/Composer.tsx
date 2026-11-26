@@ -8,6 +8,7 @@ import { PermissionMenu } from './PermissionMenu'
 import { QueuePanel } from './QueuePanel'
 import { ModelControl } from '../models/ModelControl'
 import { VoiceWave } from './VoiceWave'
+import { VoiceTranscriptPill } from './VoiceTranscriptPill'
 import { TodoPanel } from './TodoPanel'
 import { GoalButton } from '../goal/GoalButton'
 import { GameDevButton } from './GameDevButton'
@@ -458,6 +459,13 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           onReturnToCall={() => setCallOpen(true)}
         />
       )}
+      {voiceActive && (
+        <VoiceTranscriptPill
+          transcript={liveTranscript}
+          analyser={analyser}
+          transcribing={transcribing}
+        />
+      )}
       <div
         className={`composer ${recording ? 'recording' : ''} ${dragActive ? 'drag-active' : ''}`}
         onDragEnter={handleDragEnter}
@@ -500,7 +508,6 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           <VoiceWave
             analyser={analyser}
             transcribing={transcribing}
-            liveTranscript={liveTranscript}
             onCancel={() => void cancelVoice()}
           />
         )}

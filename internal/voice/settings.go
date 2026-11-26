@@ -8,7 +8,7 @@ import (
 )
 
 func SettingsFrom(options *config.VoiceOptions, resolver VariableResolver) Settings {
-	settings := Settings{Enabled: true, Resolver: resolver}
+	settings := Settings{Enabled: true, Language: DefaultLanguage, Resolver: resolver}
 	if options == nil {
 		return settings
 	}

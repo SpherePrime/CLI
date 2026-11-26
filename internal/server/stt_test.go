@@ -64,7 +64,7 @@ func TestSttCatalogAndSelectLanguage(t *testing.T) {
 	require.Equal(t, http.StatusOK, h.get(t, base, &catalog))
 	require.Equal(t, voice.EngineTinyASR, catalog.Engine)
 	require.Equal(t, "en-ru-uk", catalog.Model)
-	require.Equal(t, "auto", catalog.Language)
+	require.Equal(t, "ru", catalog.Language)
 	require.Equal(t, voice.AllowedLanguages, catalog.Languages)
 
 	var selection proto.SttSelection
@@ -74,6 +74,9 @@ func TestSttCatalogAndSelectLanguage(t *testing.T) {
 	require.Equal(t, http.StatusOK, h.get(t, base, &catalog))
 	require.Equal(t, "ru", catalog.Language)
 
-	require.Equal(t, http.StatusOK, h.post(t, base+"/select", proto.SttModelRequest{Language: "unsupported"}, &selection))
+	require.Equal(t, http.StatusOK, h.post(t, base+"/select", proto.SttModelRequest{Language: "auto"}, &selection))
 	require.Equal(t, "auto", selection.Language)
+
+	require.Equal(t, http.StatusOK, h.post(t, base+"/select", proto.SttModelRequest{Language: "unsupported"}, &selection))
+	require.Equal(t, "ru", selection.Language)
 }

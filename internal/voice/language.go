@@ -2,12 +2,17 @@ package voice
 
 import "strings"
 
-var AllowedLanguages = []string{"auto", "ru", "en", "uk"}
+const DefaultLanguage = "ru"
+
+var AllowedLanguages = []string{"ru", "en", "uk", "auto"}
 
 func NormalizeLanguage(language string) string {
 	trimmed := strings.ToLower(strings.TrimSpace(language))
-	if trimmed == "" || trimmed == "auto" {
-		return ""
+	if trimmed == "" {
+		return DefaultLanguage
+	}
+	if trimmed == "auto" {
+		return "auto"
 	}
 	if cut := strings.IndexAny(trimmed, ",;-_."); cut >= 0 {
 		trimmed = trimmed[:cut]
@@ -20,14 +25,10 @@ func NormalizeLanguage(language string) string {
 	case "uk", "ukr", "ua", "ukrainian":
 		return "uk"
 	default:
-		return ""
+		return DefaultLanguage
 	}
 }
 
 func DisplayLanguage(language string) string {
-	normalized := NormalizeLanguage(language)
-	if normalized == "" {
-		return "auto"
-	}
-	return normalized
+	return NormalizeLanguage(language)
 }

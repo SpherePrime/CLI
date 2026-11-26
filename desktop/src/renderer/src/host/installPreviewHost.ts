@@ -153,7 +153,7 @@ export function installPreviewHost() {
   let teamsState = createPreviewTeams()
   let remoteState = createPreviewRemote()
   let browserState = createPreviewBrowserState()
-  let previewSttLanguage = 'auto'
+  let previewSttLanguage = 'ru'
   let browserLogs = createPreviewBrowserLogs()
   let customWorkflows: CustomWorkflow[] = createPreviewCustomWorkflows()
   let customAgents: CustomAgent[] = createPreviewCustomAgents()

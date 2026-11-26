@@ -399,7 +399,7 @@ func (c Completions) Limits() (depth, items int) {
 // than a switch for built-in behavior.
 type VoiceOptions struct {
 	Enabled       *bool  `json:"enabled,omitempty" jsonschema:"description=Enable voice dictation,default=true"`
-	Language      string `json:"language,omitempty" jsonschema:"description=Recognition language (auto, ru, en, uk),enum=auto,enum=ru,enum=en,enum=uk,default=auto"`
+	Language      string `json:"language,omitempty" jsonschema:"description=Recognition language (ru, en, uk, auto),enum=ru,enum=en,enum=uk,enum=auto,default=ru"`
 	RecordCommand string `json:"record_command,omitempty" jsonschema:"description=Custom microphone recorder command streaming 16 kHz mono PCM to stdout, or writing to the %s placeholder"`
 	MaxDuration   int    `json:"max_duration,omitempty" jsonschema:"description=Hard limit in seconds for a single recording,default=300,example=60,example=120"`
 }

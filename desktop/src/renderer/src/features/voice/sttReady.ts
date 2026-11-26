@@ -7,7 +7,7 @@ export async function resolveAsrLanguage(
     const catalog = (await call('stt')) as SttStatus | undefined
     return normalizeAsrLanguage(catalog?.language)
   } catch {
-    return 'auto'
+    return 'ru'
   }
 }
 

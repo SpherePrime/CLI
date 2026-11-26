@@ -1288,6 +1288,8 @@ export const english: Record<string, string> = {
   'Озвучка ответов': 'Response speech',
   'Язык распознавания': 'Recognition language',
   'Распознаваемый текст': 'Live transcript',
+  'Отменить запись (Esc)': 'Cancel recording (Esc)',
+  'Длительность записи': 'Recording duration',
   'Распознавание…': 'Recognizing…',
   'Не удалось запустить локальное распознавание речи': 'Failed to start local speech recognition',
   'Загрузка модели распознавания речи · {value0}%': 'Downloading speech recognition model · {value0}%',

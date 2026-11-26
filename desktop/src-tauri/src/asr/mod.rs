@@ -144,7 +144,9 @@ impl AsrService {
                 let language = payload
                     .get("language")
                     .and_then(Value::as_str)
-                    .unwrap_or("auto")
+                    .map(str::trim)
+                    .filter(|v| !v.is_empty())
+                    .unwrap_or("ru")
                     .to_string();
                 let start_language = payload
                     .get("startLanguage")
@@ -190,7 +192,9 @@ impl AsrService {
                 let language = payload
                     .get("language")
                     .and_then(Value::as_str)
-                    .unwrap_or("auto")
+                    .map(str::trim)
+                    .filter(|v| !v.is_empty())
+                    .unwrap_or("ru")
                     .to_string();
                 let start_language = payload
                     .get("startLanguage")

@@ -27,13 +27,13 @@ describe('pcmStream helpers', () => {
     expect(Buffer.from(encoded, 'base64')).toEqual(Buffer.from([0x01, 0x02, 0x03, 0xff]))
   })
 
-  it('normalizes ASR language codes to auto/ru/en/uk', () => {
-    expect(normalizeAsrLanguage('')).toBe('auto')
+  it('normalizes ASR language codes to ru/en/uk/auto with ru default', () => {
+    expect(normalizeAsrLanguage('')).toBe('ru')
     expect(normalizeAsrLanguage('auto')).toBe('auto')
     expect(normalizeAsrLanguage('ru-RU')).toBe('ru')
     expect(normalizeAsrLanguage('en_US')).toBe('en')
     expect(normalizeAsrLanguage('uk-UA')).toBe('uk')
     expect(normalizeAsrLanguage('ua')).toBe('uk')
-    expect(normalizeAsrLanguage('fr')).toBe('auto')
+    expect(normalizeAsrLanguage('fr')).toBe('ru')
   })
 })

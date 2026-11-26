@@ -1,6 +1,8 @@
-export type AsrLanguage = 'auto' | 'ru' | 'en' | 'uk'
+export type AsrLanguage = 'ru' | 'en' | 'uk' | 'auto'
 
-export const ASR_LANGUAGES: readonly AsrLanguage[] = ['auto', 'ru', 'en', 'uk']
+export const DEFAULT_ASR_LANGUAGE: AsrLanguage = 'ru'
+
+export const ASR_LANGUAGES: readonly AsrLanguage[] = ['ru', 'en', 'uk', 'auto']
 
 export type AsrState = 'idle' | 'downloading' | 'loading' | 'ready' | 'error'
 
@@ -50,7 +52,9 @@ export function normalizeAsrLanguage(value?: string): AsrLanguage {
     .trim()
     .toLowerCase()
     .split(/[-_,]/)[0]
+  if (!cleaned) return DEFAULT_ASR_LANGUAGE
+  if (cleaned === 'auto') return 'auto'
   if (cleaned === 'ru' || cleaned === 'en' || cleaned === 'uk') return cleaned
   if (cleaned === 'ua') return 'uk'
-  return 'auto'
+  return DEFAULT_ASR_LANGUAGE
 }
