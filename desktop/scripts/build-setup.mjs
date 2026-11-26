@@ -28,7 +28,10 @@ const payloads = setupPayloads(process.platform, version, files(bundle))
 const executable = (windows ? ['PrimeDesktop.exe', 'prime-native.exe'] : ['PrimeDesktop', 'prime-native'])
   .map((name) => join(release, name)).find(existsSync)
 if (!executable) throw new Error('Release executable was not built')
-const installedSize = size(executable) + size(join(release, 'engine'))
+const installedSize =
+  size(executable) +
+  size(join(release, 'engine')) +
+  (existsSync(join(release, 'asr')) ? size(join(release, 'asr')) : 0)
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { cwd: root, stdio: 'inherit', ...options })

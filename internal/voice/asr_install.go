@@ -90,7 +90,9 @@ func asrCandidateDirs(dataDir string) []string {
 	if runtime.GOOS == "windows" {
 		if localAppData := strings.TrimSpace(os.Getenv("LOCALAPPDATA")); localAppData != "" {
 			dirs = append(dirs,
+				filepath.Join(localAppData, "Programs", "Prime Desktop", "asr"),
 				filepath.Join(localAppData, "Programs", "Prime Desktop", "resources", "asr"),
+				filepath.Join(localAppData, "Prime Desktop", "asr"),
 				filepath.Join(localAppData, "Prime Desktop", "resources", "asr"),
 				filepath.Join(localAppData, "com.sphereprime.prime", "voice", "asr"),
 			)

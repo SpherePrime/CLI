@@ -15,6 +15,7 @@ pub fn wait_for_writable(directory: &str, timeout: std::time::Duration) -> Resul
         let targets = [
             root.join("PrimeDesktop.exe"),
             root.join("engine").join("prime_desktop_engine.dll"),
+            root.join("asr").join("prime-asr.exe"),
         ];
         let deadline = std::time::Instant::now() + timeout;
         for path in targets {
