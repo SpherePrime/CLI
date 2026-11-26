@@ -153,6 +153,7 @@ export function installPreviewHost() {
   let teamsState = createPreviewTeams()
   let remoteState = createPreviewRemote()
   let browserState = createPreviewBrowserState()
+  let previewSttLanguage = 'auto'
   let browserLogs = createPreviewBrowserLogs()
   let customWorkflows: CustomWorkflow[] = createPreviewCustomWorkflows()
   let customAgents: CustomAgent[] = createPreviewCustomAgents()
@@ -440,6 +441,28 @@ export function installPreviewHost() {
       if (request.action === 'voices') return [{ id: 'F1', name: 'Женский 1', language: 'ru' }]
       if (request.action === 'status') return { available: false, ready: false }
       return {}
+    },
+    async asr(request) {
+      if (request.action === 'status' || request.action === 'warmup') {
+        return {
+          state: 'ready',
+          ready: true,
+          languages: ['en', 'ru', 'uk'],
+          chunkMs: 320,
+          progress: null,
+          message: null
+        }
+      }
+      if (request.action === 'start') {
+        return { sessionId: `preview-asr-${Date.now()}`, ready: true }
+      }
+      if (request.action === 'finish') {
+        return { text: '' }
+      }
+      if (request.action === 'transcribe') {
+        return { text: '', language: 'ru' }
+      }
+      return { ok: true }
     },
     async github(_workspaceId, request) {
       const commit = {
@@ -1159,8 +1182,20 @@ export function installPreviewHost() {
       if (operation === 'queue') return []
       if (operation === 'channelMessages') return []
       if (operation === 'getSkip') return { skip: false }
-      if (operation === 'stt') return { provider: 'whisper', models: [] }
-      if (operation === 'sttTasks' || operation === 'pluginTasks') return []
+      if (operation === 'stt') {
+        return {
+          engine: 'tinyasr',
+          model: 'en-ru-uk',
+          language: previewSttLanguage,
+          languages: ['auto', 'ru', 'en', 'uk'],
+          installed: true
+        }
+      }
+      if (operation === 'sttSelect') {
+        previewSttLanguage = String((args as { language?: string })?.language || 'auto')
+        return { engine: 'tinyasr', model: 'en-ru-uk', language: previewSttLanguage }
+      }
+      if (operation === 'pluginTasks') return []
       if (operation === 'plugins') return []
       if (operation === 'voice') return {}
       if (operation === 'goal') return { active: false, text: '' }

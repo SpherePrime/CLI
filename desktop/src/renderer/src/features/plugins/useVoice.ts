@@ -1,183 +1,212 @@
-import { useI18n } from '../../i18n'
 import { useEffect, useRef, useState } from 'react'
 import type { Workspace } from '../../app/useWorkspace'
+import type { AsrEvent, LiveTranscript } from '../../../../shared/stt'
+import { useI18n } from '../../i18n'
 import { ensureSttReady } from '../voice/sttReady'
-function wav(samples: Float32Array): string {
-  const buffer = new ArrayBuffer(44 + samples.length * 2)
-  const data = new DataView(buffer)
-  const text = (at: number, value: string) => {
-    for (let i = 0; i < value.length; i++) data.setUint8(at + i, value.charCodeAt(i))
-  }
-  text(0, 'RIFF')
-  data.setUint32(4, buffer.byteLength - 8, true)
-  text(8, 'WAVE')
-  text(12, 'fmt ')
-  data.setUint32(16, 16, true)
-  data.setUint16(20, 1, true)
-  data.setUint16(22, 1, true)
-  data.setUint32(24, 16000, true)
-  data.setUint32(28, 32000, true)
-  data.setUint16(32, 2, true)
-  data.setUint16(34, 16, true)
-  text(36, 'data')
-  data.setUint32(40, samples.length * 2, true)
-  for (let i = 0; i < samples.length; i++)
-    data.setInt16(44 + i * 2, Math.max(-1, Math.min(1, samples[i])) * 32767, true)
-  const bytes = new Uint8Array(buffer)
-  let binary = ''
-  for (let start = 0; start < bytes.length; start += 8192)
-    binary += String.fromCharCode(...bytes.subarray(start, start + 8192))
-  return btoa(binary)
+import { bytesToBase64, openPcmStream, type PcmStreamHandle } from '../voice/pcmStream'
+
+const EMPTY_TRANSCRIPT: LiveTranscript = { committed: '', open: '', tail: '' }
+
+export function formatLiveTranscript(transcript: LiveTranscript): string {
+  return [transcript.committed, transcript.open, transcript.tail]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(' ')
+    .trim()
 }
+
 export function useVoice(workspace: Workspace, onText: (text: string) => void) {
-  const { t } = useI18n()
+  const { t, language: uiLanguage } = useI18n()
   const [recording, setRecording] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null)
-  const recorder = useRef<MediaRecorder | null>(null)
-  const stream = useRef<MediaStream | null>(null)
-  const meter = useRef<AudioContext | null>(null)
-  const discard = useRef(false)
-  const pending = useRef<((text: string) => void) | null>(null)
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const startingRef = useRef(false)
+  const [liveTranscript, setLiveTranscript] = useState<LiveTranscript>(EMPTY_TRANSCRIPT)
+
+  const streamRef = useRef<PcmStreamHandle | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
   const cancelledRef = useRef(false)
-  const mountedRef = useRef(true)
-  const callback = useRef(onText)
-  callback.current = onText
-  const release = () => {
-    stream.current?.getTracks().forEach((track) => track.stop())
-    stream.current = null
-    void meter.current?.close().catch(() => {})
-    meter.current = null
-    if (mountedRef.current) setAnalyser(null)
-  }
-  useEffect(
-    () => () => {
-      mountedRef.current = false
-      cancelledRef.current = true
-      clearTimeout(timer.current)
-      if (recorder.current?.state === 'recording') {
-        recorder.current.onstop = null
-        recorder.current.stop()
+  const liveRef = useRef<LiveTranscript>(EMPTY_TRANSCRIPT)
+  const startingRef = useRef(false)
+  const finishingRef = useRef(false)
+  const onTextRef = useRef(onText)
+  onTextRef.current = onText
+
+  useEffect(() => {
+    return window.prime.onEvent((event) => {
+      if (!('type' in event) || event.type !== 'asr') return
+      const payload = event.payload as AsrEvent
+      const activeId = sessionIdRef.current
+      if (!activeId || !('sessionId' in payload) || payload.sessionId !== activeId) return
+
+      if (payload.type === 'partial') {
+        const next: LiveTranscript = {
+          committed: payload.committed || '',
+          open: payload.open || '',
+          tail: payload.tail || ''
+        }
+        liveRef.current = next
+        setLiveTranscript(next)
+      } else if (payload.type === 'commit') {
+        const chunk = (payload.text || '').trim()
+        if (!chunk) return
+        const next: LiveTranscript = {
+          committed: [liveRef.current.committed, chunk].filter(Boolean).join(' '),
+          open: '',
+          tail: ''
+        }
+        liveRef.current = next
+        setLiveTranscript(next)
+      } else if (payload.type === 'final') {
+        const finalText = (payload.text || '').trim()
+        if (finalText) {
+          const next: LiveTranscript = { committed: finalText, open: '', tail: '' }
+          liveRef.current = next
+          setLiveTranscript(next)
+        }
+      } else if (payload.type === 'error' && payload.message) {
+        workspace.errorHandler(new Error(payload.message))
       }
-      release()
-    },
-    []
-  )
-  function stopRecording(cancel = false) {
-    if (startingRef.current) {
-      cancelledRef.current = true
-      return Promise.resolve('')
-    }
-    return new Promise<string>((resolve) => {
-      if (recorder.current?.state !== 'recording') return resolve('')
-      discard.current = cancel
-      pending.current = resolve
-      recorder.current.stop()
     })
+  }, [workspace])
+
+  async function releaseAudio() {
+    const activeStream = streamRef.current
+    streamRef.current = null
+    setAnalyser(null)
+    if (activeStream) {
+      await activeStream.close().catch(() => {})
+    }
   }
+
+  function resetLive() {
+    liveRef.current = EMPTY_TRANSCRIPT
+    setLiveTranscript(EMPTY_TRANSCRIPT)
+  }
+
   async function start() {
-    if (startingRef.current || recorder.current?.state === 'recording') return
+    if (startingRef.current || streamRef.current || finishingRef.current) return
     startingRef.current = true
     cancelledRef.current = false
+    resetLive()
     try {
-      await ensureSttReady(workspace.call, t)
-      if (cancelledRef.current || !mountedRef.current) return
-      const media = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          ...(workspace.preferences.micDeviceId
-            ? { deviceId: { exact: workspace.preferences.micDeviceId } }
-            : {}),
-          channelCount: 1,
-          sampleRate: 16000
-        }
+      const asrLanguage = await ensureSttReady(workspace.call, t)
+      if (cancelledRef.current) return
+
+      const started = await window.prime.asr({
+        action: 'start',
+        language: asrLanguage,
+        startLanguage: uiLanguage
       })
-      if (cancelledRef.current || !mountedRef.current) {
-        media.getTracks().forEach((track) => track.stop())
+      const sessionId = String(started?.sessionId || '')
+      if (!sessionId) {
+        throw new Error(t('Не удалось запустить локальное распознавание речи'))
+      }
+      if (cancelledRef.current) {
+        void window.prime.asr({ action: 'cancel', sessionId }).catch(() => {})
         return
       }
-      stream.current = media
-      const level = new AudioContext()
-      const node = level.createAnalyser()
-      node.fftSize = 256
-      level.createMediaStreamSource(media).connect(node)
-      meter.current = level
-      setAnalyser(node)
-      const instance = new MediaRecorder(media)
-      recorder.current = instance
-      const chunks: Blob[] = []
-      discard.current = false
-      instance.ondataavailable = (event) => {
-        if (event.data.size) chunks.push(event.data)
+      sessionIdRef.current = sessionId
+
+      let pushQueue = Promise.resolve()
+      const handle = await openPcmStream({
+        deviceId: workspace.preferences.micDeviceId || undefined,
+        onChunk: (pcmS16le) => {
+          const currentId = sessionIdRef.current
+          if (!currentId || cancelledRef.current) return
+          const pcmBase64 = bytesToBase64(pcmS16le)
+          pushQueue = pushQueue
+            .then(() => window.prime.asr({ action: 'push', sessionId: currentId, pcmBase64 }))
+            .catch(() => {})
+        }
+      })
+
+      if (cancelledRef.current) {
+        await handle.close().catch(() => {})
+        void window.prime.asr({ action: 'cancel', sessionId }).catch(() => {})
+        sessionIdRef.current = null
+        return
       }
-      instance.onstop = async () => {
-        clearTimeout(timer.current)
-        if (mountedRef.current) setRecording(false)
-        release()
-        const resolve = pending.current
-        pending.current = null
-        if (discard.current || !mountedRef.current) {
-          resolve?.('')
-          return
-        }
-        setTranscribing(true)
-        let context: AudioContext | undefined
-        let text = ''
-        try {
-          context = new AudioContext({ sampleRate: 16000 })
-          const decoded = await context.decodeAudioData(
-            await new Blob(chunks, { type: instance.mimeType }).arrayBuffer()
-          )
-          const offline = new OfflineAudioContext(1, Math.ceil(decoded.duration * 16000), 16000)
-          const source = offline.createBufferSource()
-          source.buffer = decoded
-          source.connect(offline.destination)
-          source.start()
-          const rendered = await offline.startRendering()
-          const result = await workspace.call('voice', {
-            audio_base64: wav(rendered.getChannelData(0)),
-            mime_type: 'audio/wav'
-          })
-          text = result?.text || ''
-        } catch (error) {
-          if (mountedRef.current) workspace.errorHandler(error)
-        } finally {
-          await context?.close()
-          if (mountedRef.current) setTranscribing(false)
-        }
-        if (!mountedRef.current) {
-          resolve?.('')
-          return
-        }
-        if (resolve) resolve(text)
-        else if (text) callback.current(text)
-      }
-      instance.start()
+
+      streamRef.current = handle
+      setAnalyser(handle.analyser)
       setRecording(true)
-      timer.current = setTimeout(() => instance.state === 'recording' && instance.stop(), 120000)
     } catch (error) {
-      release()
-      if (mountedRef.current) workspace.errorHandler(error)
+      const staleId = sessionIdRef.current
+      sessionIdRef.current = null
+      if (staleId) {
+        void window.prime.asr({ action: 'cancel', sessionId: staleId }).catch(() => {})
+      }
+      await releaseAudio()
+      setRecording(false)
+      resetLive()
+      workspace.errorHandler(error)
     } finally {
       startingRef.current = false
     }
   }
+
+  async function finish(): Promise<string> {
+    if (finishingRef.current) return ''
+    const sessionId = sessionIdRef.current
+    if (!sessionId && !streamRef.current) return ''
+
+    finishingRef.current = true
+    setRecording(false)
+    setTranscribing(true)
+    try {
+      await releaseAudio()
+      if (cancelledRef.current || !sessionId) return ''
+      const result = await window.prime.asr({ action: 'finish', sessionId })
+      const finalText = String(result?.text || '').trim() || formatLiveTranscript(liveRef.current)
+      return finalText
+    } catch (error) {
+      workspace.errorHandler(error)
+      return formatLiveTranscript(liveRef.current)
+    } finally {
+      if (sessionIdRef.current === sessionId) {
+        sessionIdRef.current = null
+      }
+      setTranscribing(false)
+      resetLive()
+      finishingRef.current = false
+    }
+  }
+
   async function toggle() {
-    if (startingRef.current) {
-      cancelledRef.current = true
+    if (recording) {
+      const text = await finish()
+      if (text) onTextRef.current(text)
       return
     }
-    if (!recording) return start()
-    const text = await stopRecording()
-    if (text) callback.current(text)
+    if (transcribing) return
+    await start()
   }
-  return {
-    recording,
-    transcribing,
-    analyser,
-    toggle,
-    finish: () => stopRecording(),
-    cancel: () => stopRecording(true)
+
+  async function cancel() {
+    cancelledRef.current = true
+    const sessionId = sessionIdRef.current
+    sessionIdRef.current = null
+    setRecording(false)
+    setTranscribing(false)
+    resetLive()
+    await releaseAudio()
+    if (sessionId) {
+      await window.prime.asr({ action: 'cancel', sessionId }).catch(() => {})
+    }
   }
+
+  useEffect(
+    () => () => {
+      cancelledRef.current = true
+      const sessionId = sessionIdRef.current
+      sessionIdRef.current = null
+      void streamRef.current?.close().catch(() => {})
+      if (sessionId) {
+        void window.prime.asr({ action: 'cancel', sessionId }).catch(() => {})
+      }
+    },
+    []
+  )
+
+  return { recording, transcribing, analyser, liveTranscript, toggle, finish, cancel }
 }

@@ -6,6 +6,7 @@
   "launch": true,
   "browserLogs": true,
   "speech": true,
+  "asr": true,
   "github": true,
   "windows": true,
   "appTesting": true,

@@ -257,10 +257,7 @@ export type Operation =
   | 'pluginDisable'
   | 'pluginTasks'
   | 'stt'
-  | 'sttInstall'
-  | 'sttRemove'
   | 'sttSelect'
-  | 'sttTasks'
   | 'voice'
   | 'pending'
   | 'runs'
@@ -292,6 +289,7 @@ export interface DesktopApi {
   ): Promise<import('./launch').LaunchResponse>
   browserLogs(clear?: boolean): Promise<BrowserLog[]>
   speech(request: import('./speech').SpeechRequest): Promise<any>
+  asr(request: import('./stt').AsrRequest): Promise<any>
   github(workspaceId: string, request: import('./github').GithubRequest): Promise<any>
   windows(workspaceId: string, request: import('./computer').WindowRequest): Promise<any>
   appTesting(

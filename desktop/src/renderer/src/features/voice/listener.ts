@@ -1,9 +1,8 @@
 type Options = {
   silenceMs: number
-  // deviceId names the microphone from the voice settings. Empty means the
-  // system default.
   deviceId?: string
   onSpeechStart(): void
+  onSpeechChunk?(samples: Float32Array, sampleRate: number): void
   onSegment(samples: Float32Array, sampleRate: number): void
   sensitivity(): number
 }
@@ -92,12 +91,19 @@ export class Listener {
         this.segment = [...this.preroll]
         this.segmentMs = this.segment.length * duration
         this.silentMs = 0
+        const initial = this.preroll
         this.preroll = []
         this.options.onSpeechStart()
+        if (this.options.onSpeechChunk) {
+          for (const chunk of initial) {
+            this.options.onSpeechChunk(chunk, this.context.sampleRate)
+          }
+        }
       }
       return
     }
     this.segment.push(samples)
+    this.options.onSpeechChunk?.(samples, this.context.sampleRate)
     this.segmentMs += duration
     this.silentMs = voiced ? 0 : this.silentMs + duration
     if (this.silentMs >= this.options.silenceMs || this.segmentMs >= maximumSegmentMs) {

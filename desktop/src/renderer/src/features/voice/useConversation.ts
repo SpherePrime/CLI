@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Workspace } from '../../app/useWorkspace'
 import type { Message } from '../../../../shared/contracts'
 import type { SpeechStatus } from '../../../../shared/speech'
+import type { AsrEvent, AsrLanguage } from '../../../../shared/stt'
 import { useI18n } from '../../i18n'
 import { Listener } from './listener'
 import { Speaker } from './speaker'
 import { speakableText, speechChunks } from './speechText'
 import { ensureSttReady } from './sttReady'
-import { resample, wavBase64 } from './wav'
+import { bytesToBase64, downsampleTo16k, float32ToS16LE } from './pcmStream'
 import {
   isCancelAnswer,
   parseAnswer,
@@ -25,7 +26,13 @@ type Asking = {
 }
 
 export type ConversationState =
-  'off' | 'preparing' | 'listening' | 'hearing' | 'transcribing' | 'waiting' | 'speaking'
+  | 'off'
+  | 'preparing'
+  | 'listening'
+  | 'hearing'
+  | 'transcribing'
+  | 'waiting'
+  | 'speaking'
 
 function assistantText(messages: Message[], after: number) {
   return messages
@@ -38,7 +45,7 @@ function assistantText(messages: Message[], after: number) {
 }
 
 export function useConversation(w: Workspace) {
-  const { t } = useI18n()
+  const { t, language: uiLanguage } = useI18n()
   const [state, setState] = useState<ConversationState>('off')
   const [muted, setMuted] = useState(false)
   const [preparing, setPreparing] = useState<SpeechStatus>()
@@ -53,6 +60,10 @@ export function useConversation(w: Workspace) {
   const askedBatches = useRef(new Set<string>())
   const [question, setQuestion] = useState('')
   const generation = useRef(0)
+  const asrLanguageRef = useRef<AsrLanguage>('auto')
+  const liveSessionIdRef = useRef<string | null>(null)
+  const liveStartPromiseRef = useRef<Promise<string | null> | null>(null)
+  const livePushQueueRef = useRef<Promise<unknown>>(Promise.resolve())
   const latest = useRef(w)
   latest.current = w
   const stateRef = useRef(state)
@@ -64,12 +75,22 @@ export function useConversation(w: Workspace) {
     speaker.current?.update({ voice, speed })
   }, [voice, speed])
 
+  const cancelLiveAsr = useCallback(() => {
+    const id = liveSessionIdRef.current
+    liveSessionIdRef.current = null
+    liveStartPromiseRef.current = null
+    if (id) {
+      void window.prime.asr({ action: 'cancel', sessionId: id }).catch(() => {})
+    }
+  }, [])
+
   const stop = useCallback(async () => {
     generation.current++
     stateRef.current = 'off'
     pending.current = undefined
     asking.current = undefined
     askedBatches.current.clear()
+    cancelLiveAsr()
     setQuestion('')
     const currentListener = listener.current
     const currentSpeaker = speaker.current
@@ -83,7 +104,7 @@ export function useConversation(w: Workspace) {
     setMuted(false)
     await currentListener?.stop()
     await currentSpeaker?.dispose()
-  }, [])
+  }, [cancelLiveAsr])
 
   useEffect(() => () => void stop(), [stop])
   useEffect(() => {
@@ -167,19 +188,70 @@ export function useConversation(w: Workspace) {
     askCurrent()
   }, [w.questions, w.session?.id, askCurrent])
 
+  const beginTurnStream = useCallback(() => {
+    const turnGeneration = generation.current
+    cancelLiveAsr()
+    const startPromise = window.prime
+      .asr({
+        action: 'start',
+        language: asrLanguageRef.current,
+        startLanguage: uiLanguage
+      })
+      .then((res) => {
+        const id = String(res?.sessionId || '')
+        if (!id || turnGeneration !== generation.current) {
+          if (id) void window.prime.asr({ action: 'cancel', sessionId: id }).catch(() => {})
+          return null
+        }
+        liveSessionIdRef.current = id
+        return id
+      })
+      .catch(() => null)
+    liveStartPromiseRef.current = startPromise
+    livePushQueueRef.current = startPromise
+  }, [cancelLiveAsr, uiLanguage])
+
+  const pushTurnChunk = useCallback((samples: Float32Array, sampleRate: number) => {
+    const downsampled = downsampleTo16k(samples, sampleRate)
+    if (!downsampled.length) return
+    const pcmBase64 = bytesToBase64(float32ToS16LE(downsampled))
+    const startPromise = liveStartPromiseRef.current
+    if (!startPromise) return
+    livePushQueueRef.current = livePushQueueRef.current
+      .then(async () => {
+        const sessionId = liveSessionIdRef.current || (await startPromise)
+        if (!sessionId) return
+        await window.prime.asr({ action: 'push', sessionId, pcmBase64 })
+      })
+      .catch(() => {})
+  }, [])
+
   const handleSegment = useCallback(
     async (samples: Float32Array, sampleRate: number) => {
       if (!listener.current) return
       const turnGeneration = generation.current
       setState('transcribing')
       try {
-        const audio = wavBase64(await resample(samples, sampleRate))
-        if (turnGeneration !== generation.current) return
-        const result = await latest.current.call('voice', {
-          audio_base64: audio,
-          mime_type: 'audio/wav'
-        })
-        const text = String(result?.text || '').trim()
+        await livePushQueueRef.current.catch(() => {})
+        const sessionId = liveSessionIdRef.current
+        liveSessionIdRef.current = null
+        liveStartPromiseRef.current = null
+
+        let text = ''
+        if (sessionId) {
+          const result = await window.prime.asr({ action: 'finish', sessionId })
+          text = String(result?.text || '').trim()
+        } else {
+          const pcmBase64 = bytesToBase64(float32ToS16LE(downsampleTo16k(samples, sampleRate)))
+          const result = await window.prime.asr({
+            action: 'transcribe',
+            pcmBase64,
+            language: asrLanguageRef.current,
+            startLanguage: uiLanguage
+          })
+          text = String(result?.text || '').trim()
+        }
+
         if (!listener.current || turnGeneration !== generation.current) return
         if (!text) {
           setState(pending.current ? 'waiting' : 'listening')
@@ -204,7 +276,7 @@ export function useConversation(w: Workspace) {
         if (listener.current) setState('listening')
       }
     },
-    [answerQuestion]
+    [answerQuestion, uiLanguage]
   )
 
   const start = useCallback(async () => {
@@ -214,7 +286,7 @@ export function useConversation(w: Workspace) {
     setState('preparing')
     setStartedAt(Date.now())
     try {
-      await ensureSttReady(latest.current.call, t)
+      asrLanguageRef.current = await ensureSttReady(latest.current.call, t)
       if (callGeneration !== generation.current) return
       const status: SpeechStatus = await window.prime.speech({ action: 'prepare' })
       if (callGeneration !== generation.current) return
@@ -240,7 +312,9 @@ export function useConversation(w: Workspace) {
         onSpeechStart: () => {
           if (speaker.current?.speaking) speaker.current.stop()
           setState('hearing')
+          beginTurnStream()
         },
+        onSpeechChunk: (samples, sampleRate) => pushTurnChunk(samples, sampleRate),
         onSegment: (samples, sampleRate) => void handleSegment(samples, sampleRate)
       })
       listener.current = instance
@@ -253,11 +327,29 @@ export function useConversation(w: Workspace) {
       await stop()
       latest.current.errorHandler(error)
     }
-  }, [handleSegment, stop, t, voice, speed])
+  }, [beginTurnStream, handleSegment, pushTurnChunk, stop, t, voice, speed])
 
   useEffect(() => {
     return window.prime.onEvent((event) => {
-      if ('type' in event && event.type === 'speech') setPreparing(event.payload as SpeechStatus)
+      if (!('type' in event)) return
+      if (event.type === 'speech') {
+        setPreparing(event.payload as SpeechStatus)
+        return
+      }
+      if (event.type === 'asr') {
+        const payload = event.payload as AsrEvent
+        if (
+          payload.type === 'partial' &&
+          liveSessionIdRef.current &&
+          payload.sessionId === liveSessionIdRef.current
+        ) {
+          const live = [payload.committed, payload.open, payload.tail]
+            .map((part) => part.trim())
+            .filter(Boolean)
+            .join(' ')
+          if (live) setHeard(live)
+        }
+      }
     })
   }, [])
 
@@ -295,6 +387,7 @@ export function useConversation(w: Workspace) {
       const next = !muted
       setMuted(next)
       listener.current?.setMuted(next)
+      if (next) cancelLiveAsr()
     },
     stopSpeaking: () => {
       speaker.current?.stop()

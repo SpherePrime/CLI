@@ -1,39 +1,56 @@
-export type SttModel = {
-  id: string
-  label: string
-  language: string
-  size_bytes: number
-  recommended: boolean
-  installed: boolean
-  active: boolean
+export type AsrLanguage = 'auto' | 'ru' | 'en' | 'uk'
+
+export const ASR_LANGUAGES: readonly AsrLanguage[] = ['auto', 'ru', 'en', 'uk']
+
+export type AsrState = 'idle' | 'downloading' | 'loading' | 'ready' | 'error'
+
+export type AsrStatus = {
+  state: AsrState
+  ready: boolean
+  languages: string[]
+  chunkMs: number
+  progress?: number | null
+  message?: string | null
 }
 
-export type SttProvider = {
-  id: 'google' | 'whisper' | 'vosk'
-  title: string
-  description: string
-  available: boolean
-  models: SttModel[]
-  // Whisper only: the accelerator used by the runtime and the choices it offers.
-  accelerator?: string
-  gpus?: { index: number; name: string; kind: 'cuda' | 'vulkan' }[]
-  accelerators?: string[]
+export type LiveTranscript = {
+  committed: string
+  open: string
+  tail: string
 }
+
+export type AsrRequest =
+  | { action: 'status' }
+  | { action: 'warmup' }
+  | { action: 'start'; language?: string; startLanguage?: string }
+  | { action: 'push'; sessionId: string; pcmBase64: string }
+  | { action: 'finish'; sessionId: string }
+  | { action: 'cancel'; sessionId?: string }
+  | { action: 'transcribe'; pcmBase64: string; language?: string; startLanguage?: string }
+
+export type AsrEvent =
+  | { type: 'status'; status: AsrStatus }
+  | { type: 'partial'; sessionId: string; committed: string; open: string; tail: string }
+  | { type: 'commit'; sessionId: string; text: string }
+  | { type: 'eou'; sessionId: string; atSeconds: number; probability: number }
+  | { type: 'language'; sessionId: string; language: string }
+  | { type: 'final'; sessionId: string; text: string }
+  | { type: 'error'; sessionId?: string; message: string }
 
 export type SttStatus = {
-  engine: string
+  engine: 'tinyasr'
   model: string
-  // Recognition language; an empty string means automatic detection.
-  language?: string
-  providers: SttProvider[]
+  language: AsrLanguage
+  languages: AsrLanguage[]
+  installed: boolean
 }
 
-export type SttTask = {
-  name: string
-  state: 'running' | 'completed' | 'failed'
-  phase: string
-  text: string
-  done: number
-  total: number
-  error: string
+export function normalizeAsrLanguage(value?: string): AsrLanguage {
+  const cleaned = String(value || '')
+    .trim()
+    .toLowerCase()
+    .split(/[-_,]/)[0]
+  if (cleaned === 'ru' || cleaned === 'en' || cleaned === 'uk') return cleaned
+  if (cleaned === 'ua') return 'uk'
+  return 'auto'
 }

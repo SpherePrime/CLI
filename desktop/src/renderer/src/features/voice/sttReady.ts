@@ -1,15 +1,29 @@
-import type { SttStatus } from '../../../../shared/stt'
+import { normalizeAsrLanguage, type AsrLanguage, type AsrStatus, type SttStatus } from '../../../../shared/stt'
+
+export async function resolveAsrLanguage(
+  call: (operation: 'stt') => Promise<unknown>
+): Promise<AsrLanguage> {
+  try {
+    const catalog = (await call('stt')) as SttStatus | undefined
+    return normalizeAsrLanguage(catalog?.language)
+  } catch {
+    return 'auto'
+  }
+}
 
 export async function ensureSttReady(
   call: (operation: 'stt') => Promise<unknown>,
   t: (source: string) => string
-) {
-  const catalog = (await call('stt')) as SttStatus | undefined
-  const engine = catalog?.engine || 'auto'
-  if (engine === 'whisper' || engine === 'vosk') {
-    const models = catalog?.providers?.find((item) => item.id === engine)?.models || []
-    if (!models.some((item) => item.installed)) {
-      throw new Error(t('Для выбранного провайдера скачайте модель в настройках распознавания речи'))
-    }
+): Promise<AsrLanguage> {
+  const [language, status] = await Promise.all([
+    resolveAsrLanguage(call),
+    window.prime.asr({ action: 'status' }).catch(() => null) as Promise<AsrStatus | null>
+  ])
+  if (status && status.state === 'error') {
+    throw new Error(status.message || t('Локальная модель распознавания речи недоступна'))
   }
+  if (!status?.ready) {
+    void window.prime.asr({ action: 'warmup' }).catch(() => {})
+  }
+  return language
 }

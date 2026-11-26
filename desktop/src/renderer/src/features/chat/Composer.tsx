@@ -131,6 +131,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
     recording,
     transcribing,
     analyser,
+    liveTranscript,
     toggle: toggleVoice,
     finish: finishVoice,
     cancel: cancelVoice
@@ -499,6 +500,7 @@ export function Composer({ workspace: w }: { workspace: Workspace }) {
           <VoiceWave
             analyser={analyser}
             transcribing={transcribing}
+            liveTranscript={liveTranscript}
             onCancel={() => void cancelVoice()}
           />
         )}

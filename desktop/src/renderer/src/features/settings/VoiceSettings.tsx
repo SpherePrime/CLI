@@ -1,34 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, Download, Play, Trash2, Upload } from 'lucide-react'
+import { Play, RefreshCw, Trash2, Upload } from 'lucide-react'
 import type { Workspace } from '../../app/useWorkspace'
 import type { SpeechStatus, SpeechVoice } from '../../../../shared/speech'
-import type { SttModel, SttProvider, SttStatus, SttTask } from '../../../../shared/stt'
+import {
+  normalizeAsrLanguage,
+  type AsrEvent,
+  type AsrLanguage,
+  type AsrStatus,
+  type SttStatus
+} from '../../../../shared/stt'
 import { Select } from '../../components/Select'
 import { RangeField } from '../../components/RangeField'
-import { ModelStatusCard } from './ModelStatusCard'
 import { useI18n } from '../../i18n'
 import { Speaker } from '../voice/speaker'
 import { useAudioDevices } from './useAudioDevices'
 import '../../styles/conversation.css'
 
-const PROVIDER_LABELS: Record<string, string> = {
-  google: 'Google STT',
-  whisper: 'Whisper STT',
-  vosk: 'Vosk STT'
-}
-
-const LANGUAGES: Record<string, string> = {
-  ru: 'Русский',
-  en: 'Английский',
-  de: 'Немецкий',
-  es: 'Испанский',
-  fr: 'Французский',
-  it: 'Итальянский',
-  pt: 'Португальский',
-  zh: 'Китайский',
-  ja: 'Японский',
-  uk: 'Украинский'
-}
+const ASR_LANGUAGE_OPTIONS: { value: AsrLanguage; label: string }[] = [
+  { value: 'auto', label: 'Авто' },
+  { value: 'ru', label: 'Русский' },
+  { value: 'en', label: 'Английский' },
+  { value: 'uk', label: 'Украинский' }
+]
 
 export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
@@ -46,6 +39,7 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
   const autoOutput = defaultOutput ? t('Авто - {value0}', { value0: defaultOutput }) : t('Авто')
   const report = (failure: unknown) =>
     setError(String((failure as Error)?.message || failure).replace(/^.*Error: /, ''))
+
   useEffect(() => {
     void window.prime.speech({ action: 'voices' }).then(setVoices).catch(report)
     void window.prime.speech({ action: 'status' }).then(setStatus).catch(report)
@@ -57,13 +51,12 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
       void speaker.current?.dispose()
     }
   }, [])
+
   const preview = async () => {
     setError('')
     setBusy(true)
     try {
       speaker.current?.stop()
-      // A device change needs a fresh AudioContext, so the speaker is rebuilt
-      // when the output selection differs from the one it was built with.
       if (speaker.current && speaker.current.deviceId !== speakerDeviceId) {
         await speaker.current.dispose()
         speaker.current = undefined
@@ -81,6 +74,7 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
       setBusy(false)
     }
   }
+
   const current = voices.find((item) => item.id === voice)
   return (
     <>
@@ -196,297 +190,107 @@ export function VoiceSettings({ workspace: w }: { workspace: Workspace }) {
 
 function SttSection({ workspace: w }: { workspace: Workspace }) {
   const { t } = useI18n()
-  const [status, setStatus] = useState<SttStatus>()
-  const [tasks, setTasks] = useState<SttTask[]>([])
-  const [busy, setBusy] = useState('')
+  const [language, setLanguage] = useState<AsrLanguage>('auto')
+  const [asrStatus, setAsrStatus] = useState<AsrStatus>()
+  const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  // The catalog does not echo the exact configured GPU index, so the last user
-  // choice is remembered locally (scoped to the provider) for display only.
-  const [picked, setPicked] = useState<{ for: string; id: string } | null>(null)
-  const [accelChoice, setAccelChoice] = useState<{ for: string; value: string } | null>(null)
+  const call = w.call
+
   const report = (failure: unknown) =>
     setError(String((failure as Error)?.message || failure).replace(/^.*Error: /, ''))
-  const taskName = (provider: string, model: string) => `stt:${provider}:${model}`
-  const call = w.call
+
   const refresh = useCallback(async () => {
     try {
-      const [next, list] = await Promise.all([call('stt'), call('sttTasks')])
-      setStatus(next as SttStatus)
-      setTasks(Array.isArray(list) ? (list as SttTask[]) : [])
+      const [catalog, nativeStatus] = await Promise.all([
+        call('stt').catch(() => null) as Promise<SttStatus | null>,
+        window.prime.asr({ action: 'status' }).catch(() => null) as Promise<AsrStatus | null>
+      ])
+      if (catalog?.language) setLanguage(normalizeAsrLanguage(catalog.language))
+      if (nativeStatus) setAsrStatus(nativeStatus)
+      setError('')
     } catch (failure) {
       report(failure)
     }
   }, [call])
+
   useEffect(() => {
     void refresh()
-  }, [refresh, w.project?.id])
-  const running = tasks.some((item) => item.state === 'running')
-  useEffect(() => {
-    if (!running) return
-    const timer = setInterval(() => void refresh(), 1500)
-    return () => clearInterval(timer)
-  }, [running, refresh])
-  const run = async (key: string, action: () => Promise<unknown>) => {
+    const unsubscribe = window.prime.onEvent((event) => {
+      if (!('type' in event) || event.type !== 'asr') return
+      const payload = event.payload as AsrEvent
+      if (payload.type === 'status') {
+        setAsrStatus(payload.status)
+      }
+    })
+    return unsubscribe
+  }, [refresh])
+
+  const pickLanguage = async (next: string) => {
+    const normalized = normalizeAsrLanguage(next)
+    setLanguage(normalized)
+    setBusy(true)
     setError('')
-    setBusy(key)
     try {
-      await action()
-      await refresh()
+      await call('sttSelect', { language: normalized })
     } catch (failure) {
       report(failure)
     } finally {
-      setBusy('')
+      setBusy(false)
     }
   }
-  const engine = status?.engine || ''
-  const language = status?.language ?? ''
-  const provider = status?.providers.find((item) => item.id === engine)
-  const local = provider && provider.id !== 'google' ? provider : undefined
-  const models = local?.models ?? []
-  // Vosk ships one model per language, so only models of the chosen language
-  // make sense once it is fixed; the full list stays visible in auto mode.
-  const pool =
-    local?.id === 'vosk' && language ? models.filter((item) => item.language === language) : models
-  const options = pool.length ? pool : models
-  const pickedId = picked && picked.for === engine ? picked.id : undefined
-  const selected =
-    (pickedId ? options.find((item) => item.id === pickedId) : undefined) ??
-    options.find((item) => item.active) ??
-    options.find((item) => item.recommended) ??
-    options[0]
-  const selectedTaskName = local && selected ? taskName(local.id, selected.id) : ''
-  const task = tasks.find((item) => item.name === selectedTaskName && item.state === 'running')
-  const failed = tasks.find((item) => item.name === selectedTaskName && item.state === 'failed')
-  const background = local
-    ? tasks.filter(
-        (item) =>
-          item.state === 'running' &&
-          item.name.startsWith(`stt:${local.id}:`) &&
-          item.name !== selectedTaskName
-      )
-    : []
-  const formatSize = (bytes: number) =>
-    bytes >= 1024 ** 3
-      ? t('{value0} ГБ', { value0: (bytes / 1024 ** 3).toFixed(2) })
-      : t('{value0} МБ', { value0: Math.round(bytes / 1024 ** 2) })
-  const modelLabel = (model: SttModel) =>
-    `${model.recommended ? '★ ' : ''}${model.label} · ${formatSize(model.size_bytes)}${
-      model.installed ? '' : ` (${t('не скачана')})`
-    }`
-  const providerOptions = (status?.providers || []).map((item) => ({
-    value: item.id,
-    label: t(PROVIDER_LABELS[item.id] || item.title)
-  }))
-  const languageOptions = [
-    { value: '', label: t('Авто') },
-    ...Object.entries(LANGUAGES).map(([code, name]) => ({ value: code, label: t(name) }))
-  ]
-  const gpuOptions = (local?.gpus ?? []).map((gpu) => ({
-    // The backend prefix keeps NVIDIA cards listed under both CUDA and
-    // Vulkan distinguishable, since the two backends number devices
-    // independently.
-    value: `${gpu.kind}:${gpu.index}`,
-    label: `${gpu.name} (${gpu.kind.toUpperCase()})`
-  }))
-  const acceleratorOptions = [
-    { value: 'cpu', label: t('Процессор (CPU)') },
-    ...gpuOptions.filter((gpu) => local?.accelerators?.includes(gpu.value.split(':')[0]))
-  ]
-  // The exact stored GPU index is not echoed back, so a GPU selection simply
-  // highlights the first matching option; the picked value is sent to the
-  // backend.
-  const acceleratorChoice =
-    accelChoice && accelChoice.for === engine ? accelChoice.value : local?.accelerator || 'cpu'
-  const acceleratorValue =
-    acceleratorChoice !== 'cpu' && acceleratorOptions.length
-      ? acceleratorChoice.includes(':')
-        ? acceleratorChoice
-        : (acceleratorOptions.find((option) => option.value.startsWith(`${acceleratorChoice}:`))
-            ?.value ?? 'cpu')
-      : 'cpu'
-  const pickProvider = (next: SttProvider) =>
-    run(next.id, async () => {
-      const model =
-        next.id === 'google'
-          ? ''
-          : next.models.find((item) => item.active)?.id ||
-            next.models.find((item) => item.installed)?.id ||
-            next.models.find((item) => item.recommended)?.id ||
-            next.models[0]?.id ||
-            ''
-      await w.call('sttSelect', { provider: next.id, model, language })
-    })
-  const changeLanguage = (value: string) =>
-    void run('language', () =>
-      w.call('sttSelect', { provider: engine, model: status?.model ?? '', language: value })
-    )
-  const changeAccelerator = (value: string) => {
-    if (!local) return
-    const [backend, index] = value.split(':')
-    const next = backend === 'cpu' || !index ? 'cpu' : backend
-    setAccelChoice({ for: engine, value: next === 'cpu' ? 'cpu' : value })
-    void run('accel', async () => {
-      await w.call('sttSelect', {
-        provider: local.id,
-        model: status?.model ?? '',
-        language,
-        accelerator: next,
-        gpu_device: next === 'cpu' ? '' : index
-      })
-      // The runtime variant switches on the next install, so the current
-      // model is re-installed right away: it is idempotent and only
-      // rebuilds the whisper runtime when the accelerator changed.
-      if (local.id === 'whisper' && status?.model)
-        await w.call('sttInstall', { provider: local.id, model: status.model })
-    })
+
+  const retryWarmup = async () => {
+    setError('')
+    try {
+      const next = (await window.prime.asr({ action: 'warmup' })) as AsrStatus | undefined
+      if (next) setAsrStatus(next)
+    } catch (failure) {
+      report(failure)
+    }
   }
-  const pickModel = (model: SttModel) => {
-    if (!local) return
-    setPicked({ for: local.id, id: model.id })
-    void run(taskName(local.id, model.id), async () => {
-      await w.call('sttSelect', { provider: local.id, model: model.id, language })
-      // Download and use: an uninstalled model starts downloading right away.
-      if (!model.installed) await w.call('sttInstall', { provider: local.id, model: model.id })
-    })
-  }
-  const install = (model: SttModel) => {
-    if (!local) return
-    void run(taskName(local.id, model.id), () =>
-      w.call('sttInstall', { provider: local.id, model: model.id })
-    )
-  }
-  const choose = (model: SttModel) => {
-    if (!local) return
-    void run(taskName(local.id, model.id), () =>
-      w.call('sttSelect', { provider: local.id, model: model.id, language })
-    )
-  }
-  const remove = (model: SttModel) => {
-    if (!local) return
-    void run(taskName(local.id, model.id), () =>
-      w.call('sttRemove', { provider: local.id, model: model.id })
-    )
-  }
+
+  const statusText =
+    asrStatus?.state === 'downloading'
+      ? t('Загрузка модели распознавания речи · {value0}%', {
+          value0: Math.floor((asrStatus.progress ?? 0) * 100)
+        })
+      : asrStatus?.state === 'loading'
+        ? asrStatus.message || t('Загрузка модели…')
+        : asrStatus?.state === 'error'
+          ? asrStatus.message || t('Локальная модель распознавания речи недоступна')
+          : asrStatus?.ready
+            ? t('Модель готова (en-ru-uk)')
+            : t('Подготовка модели…')
+
   return (
     <>
-      {!status && !error && <ModelStatusCard name={t('Распознавание речи')} pending />}
-      {status && (
-        <>
-          <label className="form-label">
-            {t('Провайдер распознавания речи')}
-            <Select
-              label={t('Провайдер распознавания речи')}
-              value={
-                providerOptions.some((item) => item.value === engine)
-                  ? engine
-                  : providerOptions[0]?.value || ''
-              }
-              disabled={busy !== '' || running}
-              onChange={(next) => {
-                const nextProvider = status.providers.find((item) => item.id === next)
-                if (nextProvider) void pickProvider(nextProvider)
-              }}
-              options={providerOptions}
-            />
-          </label>
-          {provider && <p className="muted">{provider.description}</p>}
-          <label className="form-label">
-            {t('Язык распознавания')}
-            <Select
-              label={t('Язык распознавания')}
-              value={language}
-              disabled={busy !== '' || running}
-              onChange={changeLanguage}
-              options={languageOptions}
-            />
-          </label>
-          {local?.id === 'whisper' && (
-            <label className="form-label">
-              {t('Ускорение')}
-              <Select
-                label={t('Ускорение')}
-                value={acceleratorValue}
-                disabled={busy !== '' || running}
-                onChange={changeAccelerator}
-                options={acceleratorOptions}
-              />
-            </label>
-          )}
-          {options.length > 0 && (
-            <label className="form-label">
-              {t('Модель')}
-              <Select
-                label={t('Модель')}
-                value={selected?.id ?? ''}
-                disabled={busy !== '' || running}
-                onChange={(next) => {
-                  const model = options.find((item) => item.id === next)
-                  if (model) pickModel(model)
-                }}
-                options={options.map((item) => ({ value: item.id, label: modelLabel(item) }))}
-              />
-            </label>
-          )}
-        </>
+      <p className="muted">
+        {t('Локальная модель en-ru-uk. Речь распознаётся на этом компьютере в реальном времени без отправки в интернет.')}
+      </p>
+      <p className="muted" role="status">
+        {statusText}
+      </p>
+      {asrStatus?.state === 'error' && (
+        <div className="settings-actions">
+          <button type="button" onClick={() => void retryWarmup()}>
+            <RefreshCw size={14} />
+            {t('Повторить')}
+          </button>
+        </div>
       )}
-      {local && selected && (
-        <ModelStatusCard
-          name={selected.label}
-          task={task ?? failed}
-          pending={busy === selectedTaskName || busy === 'accel'}
-          installed={selected.installed}
-          active={selected.active}
-        >
-          {!task && (
-            <div className="settings-actions">
-              {!selected.installed ? (
-                <button disabled={busy !== '' || running} onClick={() => void install(selected)}>
-                  <Download size={14} />
-                  {t('Скачать')}
-                </button>
-              ) : selected.active ? (
-                <>
-                  <button
-                    className="quiet"
-                    disabled={busy !== '' || running}
-                    onClick={() => void remove(selected)}
-                  >
-                    <Trash2 size={14} />
-                    {t('Удалить')}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    className="primary"
-                    disabled={busy !== '' || running}
-                    onClick={() => void choose(selected)}
-                  >
-                    <Check size={14} />
-                    {t('Выбрать')}
-                  </button>
-                  <button
-                    className="quiet"
-                    disabled={busy !== '' || running}
-                    onClick={() => void remove(selected)}
-                  >
-                    <Trash2 size={14} />
-                    {t('Удалить')}
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </ModelStatusCard>
-      )}
-      {background.map((item) => {
-        const modelId = item.name.split(':')[2] || ''
-        const model = models.find((entry) => entry.id === modelId)
-        return <ModelStatusCard name={model?.label || modelId} task={item} key={item.name} />
-      })}
-      {provider?.id === 'google' && (
-        <p className="muted">{t('Работает онлайн без установки моделей.')}</p>
-      )}
+      <label className="form-label">
+        {t('Язык распознавания')}
+        <Select
+          label={t('Язык распознавания')}
+          value={language}
+          disabled={busy}
+          onChange={(value) => void pickLanguage(value)}
+          options={ASR_LANGUAGE_OPTIONS.map((item) => ({
+            value: item.value,
+            label: t(item.label)
+          }))}
+        />
+      </label>
       {error && <p className="error-text">{error}</p>}
     </>
   )

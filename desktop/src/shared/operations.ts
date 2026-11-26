@@ -161,22 +161,7 @@ export function operationRoute(operation: Operation, args: any = {}): Route {
     pluginDisable: () => ['POST', `plugins/${encodeURIComponent(args.name)}/disable`],
     pluginTasks: () => ['GET', 'plugins/tasks'],
     stt: () => ['GET', 'stt'],
-    sttInstall: () => ['POST', 'stt/install', { provider: args.provider, model: args.model }],
-    sttRemove: () => ['POST', 'stt/remove', { provider: args.provider, model: args.model }],
-    sttSelect: () => [
-      'POST',
-      'stt/select',
-      {
-        provider: args.provider,
-        model: args.model,
-        // Optional extras: language always persists ("": auto), the accelerator
-        // pair only matters for whisper. Undefined keys stay out of the payload.
-        ...(args.language === undefined ? {} : { language: args.language }),
-        ...(args.accelerator === undefined ? {} : { accelerator: args.accelerator }),
-        ...(args.gpu_device === undefined ? {} : { gpu_device: args.gpu_device })
-      }
-    ],
-    sttTasks: () => ['GET', 'stt/tasks'],
+    sttSelect: () => ['POST', 'stt/select', { language: args.language ?? 'auto' }],
     voice: () => ['POST', 'voice/transcribe', args],
     pending: () => ['GET', 'pending'],
     runs: () => ['GET', args.runId ? `runs/${encodeURIComponent(args.runId)}` : 'runs'],
