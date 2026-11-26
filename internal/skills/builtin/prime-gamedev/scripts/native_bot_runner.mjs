@@ -13,7 +13,7 @@ function waitMs(ms) {
   return new Promise((resolvePromise) => setTimeout(resolvePromise, ms))
 }
 
-function runShellCommand(command, cwd, envExtra = {}) {
+function runShellCommand(command, cwd, envExtra = {}, timeoutMs = 45000) {
   return new Promise((resolvePromise) => {
     const child = spawn(command, {
       cwd,
@@ -23,6 +23,25 @@ function runShellCommand(command, cwd, envExtra = {}) {
     })
     let stdout = ''
     let stderr = ''
+    let settled = false
+    let timedOut = false
+
+    const finish = (result) => {
+      if (settled) {
+        return
+      }
+      settled = true
+      clearTimeout(timer)
+      resolvePromise(result)
+    }
+
+    const timer = setTimeout(async () => {
+      timedOut = true
+      stderr += `\nBot command timed out after ${timeoutMs}ms and was terminated.`
+      await stopChildCleanly(child)
+      finish({ code: 124, signal: 'SIGKILL', timedOut: true, stdout, stderr })
+    }, Math.max(1000, timeoutMs))
+
     child.stdout?.on('data', (chunk) => {
       stdout += chunk.toString()
     })
@@ -30,10 +49,10 @@ function runShellCommand(command, cwd, envExtra = {}) {
       stderr += chunk.toString()
     })
     child.on('exit', (code, signal) => {
-      resolvePromise({ code, signal, stdout, stderr })
+      finish({ code, signal, timedOut, stdout, stderr })
     })
     child.on('error', (error) => {
-      resolvePromise({ code: -1, signal: null, stdout, stderr: `${stderr}\n${error.message}` })
+      finish({ code: -1, signal: null, timedOut, stdout, stderr: `${stderr}\n${error.message}` })
     })
   })
 }
@@ -101,7 +120,7 @@ async function stopFfmpegRecording(recorder) {
 
 function printUsage() {
   console.log(`Usage:
-  node native_bot_runner.mjs (--cmd "<game launch command>" | --window "<window title substring>") [--cwd <dir>] [--grab-mode window|title|region] [--window-timeout-ms 15000] [--bot-cmd "<bot command>"] [--duration 15] [--fps 4] [--max-frames 120] [--element-crops "player:100,100,200,200"] [--out <dir>]`)
+  node native_bot_runner.mjs (--cmd "<game launch command>" | --window "<window title substring>") [--cwd <dir>] [--grab-mode window|title|region] [--window-timeout-ms 15000] [--bot-cmd "<bot command>"] [--bot-timeout-ms 45000] [--duration 15] [--fps 4] [--max-frames 120] [--element-crops "player:100,100,200,200"] [--out <dir>]`)
 }
 
 async function main() {
@@ -128,6 +147,7 @@ async function main() {
   const videoPath = join(outDir, 'playthrough.mp4')
   const startupMs = Math.max(200, Number(flags['startup-ms'] ?? flags.startupMs) || 800)
   const windowTimeoutMs = Math.max(1000, Number(flags['window-timeout-ms'] ?? flags.windowTimeoutMs) || 15000)
+  const botTimeoutMs = Math.max(2000, Number(flags['bot-timeout-ms'] ?? flags.botTimeoutMs) || 45000)
   const durationSec = Math.max(3, Number(flags.duration) || 15)
   const fps = Math.max(1, Number(flags.fps) || 4)
   const maxFrames = Math.max(1, Number(flags['max-frames'] ?? flags.maxFrames) || 120)
@@ -204,21 +224,30 @@ async function main() {
   })
 
   let botResult = null
+  let gameExitedEarly = false
   try {
     if (flags['bot-cmd'] ?? flags.botCmd) {
       const botCmd = flags['bot-cmd'] ?? flags.botCmd
-      botResult = await runShellCommand(botCmd, cwd, {
-        PRIME_GAMEDEV_OUT: outDir,
-        PRIME_GAMEDEV_ELEMENTS: elementsDir,
-        PRIME_GAMEDEV_WINDOW_TITLE: windowTarget.title || '',
-        PRIME_GAMEDEV_WINDOW_PID: String(windowTarget.pid || gameProc?.pid || ''),
-        PRIME_GAMEDEV_WINDOW_X: String(windowTarget.region.x),
-        PRIME_GAMEDEV_WINDOW_Y: String(windowTarget.region.y),
-        PRIME_GAMEDEV_WINDOW_W: String(windowTarget.region.width),
-        PRIME_GAMEDEV_WINDOW_H: String(windowTarget.region.height)
-      })
+      botResult = await runShellCommand(
+        botCmd,
+        cwd,
+        {
+          PRIME_GAMEDEV_OUT: outDir,
+          PRIME_GAMEDEV_ELEMENTS: elementsDir,
+          PRIME_GAMEDEV_WINDOW_TITLE: windowTarget.title || '',
+          PRIME_GAMEDEV_WINDOW_PID: String(windowTarget.pid || gameProc?.pid || ''),
+          PRIME_GAMEDEV_WINDOW_X: String(windowTarget.region.x),
+          PRIME_GAMEDEV_WINDOW_Y: String(windowTarget.region.y),
+          PRIME_GAMEDEV_WINDOW_W: String(windowTarget.region.width),
+          PRIME_GAMEDEV_WINDOW_H: String(windowTarget.region.height)
+        },
+        botTimeoutMs
+      )
     } else {
       await waitMs(durationSec * 1000)
+    }
+    if (gameProc && gameProc.exitCode !== null) {
+      gameExitedEarly = true
     }
   } finally {
     await stopFfmpegRecording(recorderProc)
@@ -269,6 +298,7 @@ async function main() {
       ? {
           code: botResult.code,
           signal: botResult.signal,
+          timedOut: Boolean(botResult.timedOut),
           stdout: botResult.stdout.slice(-4000),
           stderr: botResult.stderr.slice(-4000)
         }
@@ -276,12 +306,17 @@ async function main() {
     gameProcess: gameProc
       ? {
           exitCode: gameProc.exitCode,
+          exitedEarly: gameExitedEarly,
           stdout: gameStdout.slice(-4000),
           stderr: gameStderr.slice(-4000)
         }
       : null,
     recorderStderr: recorderStderr.slice(-2000)
   }
+
+  const staticAnomaly = (frameSummary.anomalies || []).find(
+    (item) => item.type === 'static_screen' || item.type === 'identical_frame_sizes'
+  )
 
   const reportPath = join(outDir, 'report.json')
   writeFileSync(reportPath, JSON.stringify(report, null, 2))
@@ -293,7 +328,16 @@ async function main() {
   if (elementCaptures.length > 0) {
     console.log(`Element close-ups: ${elementCaptures.length} (${elementsDir})`)
   }
-  if (botResult && botResult.code !== 0) {
+  if (staticAnomaly) {
+    console.error(`Liveness check FAILED: ${staticAnomaly.detail}`)
+  }
+  if (gameExitedEarly) {
+    console.error(`Game process exited unexpectedly early (code=${gameProc?.exitCode}).`)
+  }
+  if (botResult?.timedOut) {
+    console.error(`Bot command timed out after ${botTimeoutMs}ms and was stopped.`)
+  }
+  if ((botResult && botResult.code !== 0) || staticAnomaly || gameExitedEarly) {
     process.exit(1)
   }
 }

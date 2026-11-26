@@ -1,9 +1,11 @@
 import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import {
   copyFileSync,
   existsSync,
   mkdirSync,
   readdirSync,
+  readFileSync,
   statSync
 } from 'node:fs'
 import { extname, join, resolve } from 'node:path'
@@ -344,6 +346,30 @@ export function detectVideoAnomalies({ ffmpegPath, videoPath, frames }) {
         type: 'identical_frame_sizes',
         detail: `All ${frames.length} frames are ${minSize} bytes`
       })
+    }
+
+    if (frames.length >= 3) {
+      const hashCounts = new Map()
+      for (const frame of frames) {
+        if (!existsSync(frame.path)) {
+          continue
+        }
+        const digest = createHash('sha256').update(readFileSync(frame.path)).digest('hex')
+        hashCounts.set(digest, (hashCounts.get(digest) || 0) + 1)
+      }
+      const uniqueCount = hashCounts.size
+      const dominantCount = Math.max(0, ...hashCounts.values())
+      if (uniqueCount <= 1) {
+        anomalies.push({
+          type: 'static_screen',
+          detail: `All ${frames.length} captured frames are identical — nothing changed on screen (bot failed to drive the app or app froze)`
+        })
+      } else if (frames.length >= 6 && uniqueCount <= 2 && dominantCount / frames.length >= 0.9) {
+        anomalies.push({
+          type: 'mostly_static_screen',
+          detail: `${dominantCount}/${frames.length} frames are identical (${uniqueCount} unique frames) — bot likely stalled or lost focus`
+        })
+      }
     }
   }
 

@@ -30,6 +30,7 @@ Options:
   --poll-ms <int>              Telemetry polling interval in ms (default: 150)
   --capture-interval-ms <int>  Fallback PNG capture interval in ms (default: 350)
   --explore-ms <int>           Built-in exploratory bot duration when --bot is omitted (default: 10000)
+  --bot-timeout-ms <int>       Hard timeout for bot execution before aborting (default: 45000)
   --floor-y-limit <number>     Optional max Y coordinate threshold for fall-through checks
   --state-expr <js>            JS expression evaluated in page to read game state (default: window.__GAME_DEBUG__)
   --playwright-path <path>     Optional explicit path to playwright package
@@ -94,6 +95,7 @@ async function main() {
   const pollMs = parsePositiveInteger(flags['poll-ms'], 150)
   const captureIntervalMs = parsePositiveInteger(flags['capture-interval-ms'], 350)
   const exploreMs = parsePositiveInteger(flags['explore-ms'], 10000)
+  const botTimeoutMs = parsePositiveInteger(flags['bot-timeout-ms'] ?? flags.botTimeoutMs, 45000)
   const floorYLimit =
     flags['floor-y-limit'] !== undefined ? Number(flags['floor-y-limit']) : Number.NaN
   const stateExpr =
@@ -296,11 +298,25 @@ async function main() {
       if (typeof runner !== 'function') {
         throw new Error(`Bot module ${botPath} must export runBot({ page, canvas, helpers })`)
       }
-      await runner({
-        page,
-        canvas: canvasVisible ? canvas : null,
-        helpers
-      })
+      let botTimer = null
+      try {
+        await Promise.race([
+          runner({
+            page,
+            canvas: canvasVisible ? canvas : null,
+            helpers
+          }),
+          new Promise((_, reject) => {
+            botTimer = setTimeout(() => {
+              reject(new Error(`Bot script timed out after ${botTimeoutMs}ms without completing.`))
+            }, botTimeoutMs)
+          })
+        ])
+      } finally {
+        if (botTimer) {
+          clearTimeout(botTimer)
+        }
+      }
     } else {
       await runDefaultExploratoryBot({
         page,
@@ -388,7 +404,19 @@ async function main() {
     `Runtime issues: pageErrors=${runtime.pageErrors.length}, consoleErrors=${runtime.consoleErrors.length}, httpErrors=${runtime.httpErrors.length}, failedRequests=${runtime.failedRequests.length}, physicsAnomalies=${telemetrySummary.physicsAnomalies.length}`
   )
 
-  if (botError || runtime.pageErrors.length > 0 || telemetrySummary.physicsAnomalies.length > 0) {
+  const staticAnomaly = (framesSummary?.anomalies || []).find(
+    (item) => item.type === 'static_screen' || item.type === 'identical_frame_sizes'
+  )
+  if (staticAnomaly) {
+    console.error(`Liveness check FAILED: ${staticAnomaly.detail}`)
+  }
+
+  if (
+    botError ||
+    staticAnomaly ||
+    runtime.pageErrors.length > 0 ||
+    telemetrySummary.physicsAnomalies.length > 0
+  ) {
     process.exit(1)
   }
 }
