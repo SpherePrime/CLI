@@ -19,15 +19,25 @@ function getBuiltinPresets() {
   const presetsDir = join(dirname(fileURLToPath(import.meta.url)), 'presets')
   const definitions = [
     {
+      id: 'preset:element:showcase-capture-probe',
+      scope: 'element',
+      category: 'asset-showcase',
+      feature: 'showcase-visuals',
+      tags: ['showcase', 'visual', 'assets', 'models', 'textures', 'weapons', 'multi-angle', 'photos'],
+      fileName: 'showcase_capture_probe.mjs',
+      summary:
+        'Rapid multi-angle photo capture on a dedicated Showcase scene: iterates every standalone created and downloaded element (characters, weapons, props, structures) from multiple angles for visual review.'
+    },
+    {
       id: 'preset:physics:teleport-collision-probe',
       scope: 'physics',
       category: 'collisions',
       physics: 'collisions',
-      feature: 'teleport-inspection',
-      tags: ['teleport', 'collision', 'floor', 'textures', 'structures', 'clipping', 'visual'],
+      feature: 'collision-probe',
+      tags: ['teleport', 'collision', 'floor', 'walls', 'corners', 'clipping', 'hitboxes'],
       fileName: 'teleport_collision_probe.mjs',
       summary:
-        'Fast teleport + local collision & visual probe: teleports bot to structures/items/corners, probes floor fall-throughs and clipping, frames visuals for inspection.'
+        'Collision-only waypoint probe: moves the bot to collision hotspots (walls, corners, seams, edges) to check floor fall-throughs, clipping, and NaN coordinates.'
     },
     {
       id: 'preset:feature:weapon-crosshair-probe',

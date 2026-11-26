@@ -845,7 +845,7 @@ func (a *sessionAgent) Run(ctx context.Context, call SessionAgentCall) (result *
 			systemPrompt += visualCheckBlock(!a.isSubAgent && largeModel.CatwalkCfg.SupportsImages)
 			systemPrompt += reviewPolicyBlock(!a.isSubAgent && hasAgentTool(agentTools), coordinatorReasoningMode(ctx, largeModel.ModelCfg))
 			systemPrompt += verificationProtocolBlock(a.agent.ID, call.StrictVerify, coordinatorReasoningMode(ctx, largeModel.ModelCfg), !a.isSubAgent && hasAgentTool(agentTools))
-			systemPrompt += gameDevPromptBlockWithDelegation(a.agent.ID, call.GameDev, !a.isSubAgent && hasAgentTool(agentTools))
+			systemPrompt += gameDevPromptBlockForSession(a.agent.ID, call.GameDev, !a.isSubAgent && hasAgentTool(agentTools), call.StrictVerify)
 		}
 	}
 

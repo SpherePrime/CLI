@@ -143,6 +143,7 @@ func TestPrimeGameDevBuiltinHiddenAndMaterializes(t *testing.T) {
 		"scripts/native_bot_runner.mjs",
 		"scripts/element_capture.mjs",
 		"scripts/library.mjs",
+		"scripts/presets/showcase_capture_probe.mjs",
 		"scripts/presets/teleport_collision_probe.mjs",
 		"scripts/presets/weapon_crosshair_probe.mjs",
 		"scripts/presets/physics_bounds_probe.mjs",

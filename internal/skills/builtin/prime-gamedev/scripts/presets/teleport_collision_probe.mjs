@@ -19,14 +19,11 @@ export async function runTeleportCollisionProbe({
 
   for (let i = 0; i < resolvedTargets.length; i += 1) {
     const target = resolvedTargets[i]
-    const label = String(target.name || `target-${i + 1}`)
+    const label = String(target.name || `collision-spot-${i + 1}`)
     const teleportOk = await page.evaluate((t) => {
       const dbg = window.__GAME_DEBUG__
       if (!dbg || typeof dbg.teleport !== 'function') return false
       dbg.teleport(t.x ?? 0, t.y ?? 0, t.z ?? 0)
-      if (t.lookAt && typeof dbg.lookAt === 'function') {
-        dbg.lookAt(t.lookAt.x ?? 0, t.lookAt.y ?? 0, t.lookAt.z ?? 0)
-      }
       return true
     }, target)
 
@@ -35,12 +32,13 @@ export async function runTeleportCollisionProbe({
       continue
     }
 
-    await page.waitForTimeout(160)
+    await page.waitForTimeout(140)
     const before = await helpers.readGameState()
     const startY = Number(before?.y ?? before?.player?.y ?? target.y ?? 0)
-    const keys = Array.isArray(target.probeKeys) && target.probeKeys.length > 0
-      ? target.probeKeys
-      : ['KeyW', 'KeyD', 'KeyS', 'KeyA']
+    const keys =
+      Array.isArray(target.probeKeys) && target.probeKeys.length > 0
+        ? target.probeKeys
+        : ['KeyW', 'KeyD', 'KeyS', 'KeyA']
 
     const anomalies = []
     for (const key of keys) {
@@ -56,26 +54,20 @@ export async function runTeleportCollisionProbe({
       if (coords.some((v) => !Number.isFinite(Number(v)))) {
         anomalies.push({ type: 'nan_coordinate', key, coords })
       }
-      if (Number.isFinite(startY) && Number.isFinite(currentY) && currentY < startY - fallThresholdOffset) {
+      if (
+        Number.isFinite(startY) &&
+        Number.isFinite(currentY) &&
+        currentY < startY - fallThresholdOffset
+      ) {
         anomalies.push({ type: 'floor_fall_through', key, startY, currentY })
       }
     }
 
-    await page.evaluate((t) => {
-      const dbg = window.__GAME_DEBUG__
-      if (t.lookAt && dbg && typeof dbg.lookAt === 'function') {
-        dbg.lookAt(t.lookAt.x ?? 0, t.lookAt.y ?? 0, t.lookAt.z ?? 0)
-      }
-    }, target)
-    await page.waitForTimeout(120)
-
-    const capturePath = await helpers.captureEventFrame(`probe-${label}`)
-    helpers.markCheckpoint(`teleport-probe:${label}`, { anomalies: anomalies.length })
+    helpers.markCheckpoint(`collision-probe:${label}`, { anomalies: anomalies.length })
     results.push({
       label,
       ok: anomalies.length === 0,
-      anomalies,
-      capturePath
+      anomalies
     })
   }
 

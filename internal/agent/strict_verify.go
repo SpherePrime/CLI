@@ -117,7 +117,7 @@ Strict Verify mode is ENABLED. Enforce the highest quality bar (` + "`REVIEW DEP
 - Be strict AND smart about the target surface:
   - Do NOT demand mobile phone widths (320/375 px) for desktop/PC-only apps; test realistic desktop/resizable widths instead.
   - When only UI logic changed (no styling/layout changes), verify interactive clicks, inputs, state changes, and console/network errors without demanding redundant close-up screenshots.
-  - When visuals/layout changed, inspect overview screenshots and take targeted close-ups (zoom 2) where details, alignment, contrast, or small elements need verification.
+  - When visuals/layout changed, inspect normal unzoomed overview screenshots first; do NOT zoom by default — use zoom or a close-up ONLY when a small element, fine text/icon, or suspected defect genuinely needs closer inspection.
   - For CLI/backend/libraries/scripts without UI, verify build, lint, tests, and real execution with valid, edge, and invalid inputs.
 </strict_verification>`
 	case config.AgentPlan:
