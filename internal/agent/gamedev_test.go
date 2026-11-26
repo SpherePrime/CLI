@@ -147,6 +147,7 @@ func TestGameDevPromptBlockEnabledByRole(t *testing.T) {
 	require.Contains(t, planBlock, "third-party game mods")
 	require.Contains(t, planBlock, "Fab / Quixel Megascans")
 	require.Contains(t, planBlock, "Graphics/Quality Settings")
+	require.Contains(t, planBlock, "skip graphics settings menus for third-party game mods")
 	require.Contains(t, planBlock, ">= 50 FPS")
 	require.Contains(t, planBlock, "diversify web sources by category")
 	require.Contains(t, planBlock, "Mesh2Motion")
