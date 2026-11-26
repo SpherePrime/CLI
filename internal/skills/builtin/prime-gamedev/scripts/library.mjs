@@ -29,15 +29,15 @@ function getBuiltinPresets() {
         'Rapid multi-angle photo capture on a dedicated Showcase scene: iterates every standalone created and downloaded element (characters, weapons, props, structures) from multiple angles for visual review.'
     },
     {
-      id: 'preset:physics:teleport-collision-probe',
+      id: 'preset:physics:collision-suite-probe',
       scope: 'physics',
       category: 'collisions',
       physics: 'collisions',
-      feature: 'collision-probe',
-      tags: ['teleport', 'collision', 'floor', 'walls', 'corners', 'clipping', 'hitboxes'],
-      fileName: 'teleport_collision_probe.mjs',
+      feature: 'collision-tests',
+      tags: ['collision', 'unit-test', 'all-sides', 'collider', 'hitboxes', 'floor', 'walls', 'tunneling'],
+      fileName: 'collision_suite_probe.mjs',
       summary:
-        'Collision-only waypoint probe: moves the bot to collision hotspots (walls, corners, seams, edges) to check floor fall-throughs, clipping, and NaN coordinates.'
+        'Deterministic code-level collision test harness: verifies every solid object has a collider matching its visual bounds and blocks movement from all 4/6 sides without teleporting in-game.'
     },
     {
       id: 'preset:feature:weapon-crosshair-probe',
