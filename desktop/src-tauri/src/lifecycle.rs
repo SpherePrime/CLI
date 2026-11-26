@@ -32,6 +32,9 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         crate::logging::error(&format!("Tray unavailable: {error}"));
     }
     crate::discord::start();
+    app.state::<crate::state::AppState>()
+        .asr
+        .warmup(app.handle().clone());
     if let Err(error) = app
         .state::<crate::state::AppState>()
         .windows
@@ -257,6 +260,7 @@ pub fn shutdown(app: &tauri::AppHandle, state: &crate::state::AppState) {
     state.appui.shutdown();
     state.windows.shutdown(app);
     state.speech.shutdown();
+    state.asr.shutdown();
     take_engine_for_shutdown(&state.closing, &state.engine, |engine| {
         engine.close();
     });

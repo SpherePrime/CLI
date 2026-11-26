@@ -74,6 +74,10 @@ manpages/
 /desktop/src-tauri/engine/*.dylib
 /desktop/src-tauri/engine/*.h
 /desktop/src-tauri/engine/manifest.json
+/desktop/src-tauri/asr/
+*.tzf
+*.tzf.gz
+*.onnx.gz
 
 # Updater signing keys
 *.updater.key

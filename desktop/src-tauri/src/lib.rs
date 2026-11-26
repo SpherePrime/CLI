@@ -1,4 +1,5 @@
 mod appui;
+mod asr;
 mod attachments;
 mod automations;
 mod browser;

@@ -174,6 +174,9 @@ fn dispatch(app: &tauri::AppHandle, method: &str, args: &[Value]) -> HostResult<
         "speech" => state
             .speech
             .handle(app.clone(), args.first().unwrap_or(&Value::Null)),
+        "asr" => state
+            .asr
+            .handle(app.clone(), args.first().unwrap_or(&Value::Null)),
         "projects" => Ok(Value::Array(
             state.projects.lock().unwrap().values().cloned().collect(),
         )),

@@ -36,6 +36,7 @@ pub struct AppState {
     pub windows: Arc<crate::computer::WindowManager>,
     pub appui: Arc<crate::appui::manager::AppUiManager>,
     pub speech: Arc<crate::speech::SpeechService>,
+    pub asr: Arc<crate::asr::AsrService>,
     pub media: Arc<crate::media::MediaServer>,
     pub project_open: Mutex<()>,
 }
@@ -87,6 +88,7 @@ impl AppState {
             windows: Arc::new(crate::computer::WindowManager::new()),
             appui: Arc::new(crate::appui::manager::AppUiManager::new()),
             speech: crate::speech::SpeechService::new(),
+            asr: crate::asr::AsrService::new(),
             media: Arc::new(crate::media::MediaServer::new()),
             project_open: Mutex::new(()),
         })

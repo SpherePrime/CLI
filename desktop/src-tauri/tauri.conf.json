@@ -34,7 +34,8 @@
       "nsis"
     ],
     "resources": [
-      "engine/"
+      "engine/",
+      "asr/"
     ],
     "icon": [
       "../build/icon.png",

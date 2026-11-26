@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 const root = fileURLToPath(new URL('..', import.meta.url))
 const target = process.argv[2] || (process.platform === 'win32' ? 'nsis' : 'appimage,deb,rpm')
 const library = process.platform === 'win32' ? 'prime_desktop_engine.dll' : process.platform === 'darwin' ? 'libprime_desktop_engine.dylib' : 'libprime_desktop_engine.so'
+const asrBinary = process.platform === 'win32' ? 'prime-asr.exe' : 'prime-asr'
 const publicKey = process.env.PRIME_UPDATER_PUBLIC_KEY?.trim()
 const endpoint = process.env.PRIME_UPDATER_ENDPOINT?.trim()
 const privateKey = process.env.TAURI_SIGNING_PRIVATE_KEY
@@ -21,7 +22,13 @@ try {
   writeFileSync(config, JSON.stringify({
     bundle: {
       createUpdaterArtifacts: signed,
-      resources: { [`engine/${library}`]: `engine/${library}`, 'engine/manifest.json': 'engine/manifest.json' },
+      resources: {
+        [`engine/${library}`]: `engine/${library}`,
+        'engine/manifest.json': 'engine/manifest.json',
+        [`asr/${asrBinary}`]: `asr/${asrBinary}`,
+        'asr/en-ru-uk.tzf.gz': 'asr/en-ru-uk.tzf.gz',
+        'asr/silero_vad.onnx.gz': 'asr/silero_vad.onnx.gz'
+      },
       ...(process.platform === 'linux' ? {
         linux: {
           appimage: { bundleMediaFramework: true },

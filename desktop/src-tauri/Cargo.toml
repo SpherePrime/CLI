@@ -9,7 +9,9 @@ name = "prime_native"
 crate-type = ["rlib"]
 
 [build-dependencies]
+protoc-bin-vendored = "3"
 tauri-build = { version = "2", features = [] }
+tonic-build = "0.12"
 
 [dependencies]
 tauri = { version = "2.12.5", features = ["unstable", "tray-icon"] }
@@ -47,6 +49,9 @@ rand = "0.9"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }
 zip = { version = "2", default-features = false, features = ["deflate"] }
 tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "sync", "time", "macros"] }
+tokio-stream = "0.1"
+tonic = "0.12"
+prost = "0.13"
 tungstenite = { version = "0.30.0", features = ["handshake"] }
 
 [target.'cfg(windows)'.dependencies]

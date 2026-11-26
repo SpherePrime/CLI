@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package prime.asr.v1;
+
+service AsrService {
+  rpc Status(StatusRequest) returns (StatusResponse);
+  rpc StreamRecognize(stream RecognizeRequest) returns (stream RecognizeEvent);
+  rpc Transcribe(TranscribeRequest) returns (TranscribeResponse);
+  rpc Shutdown(ShutdownRequest) returns (ShutdownResponse);
+}
+
+message StatusRequest {}
+
+message StatusResponse {
+  bool ready = 1;
+  repeated string languages = 2;
+  uint32 chunk_ms = 3;
+  uint32 sample_rate = 4;
+}
+
+message RecognizeRequest {
+  oneof payload {
+    StartSession start = 1;
+    AudioChunk audio = 2;
+    FinishSession finish = 3;
+    CancelSession cancel = 4;
+  }
+}
+
+message StartSession {
+  string language = 1;
+  string start_language = 2;
+}
+
+message AudioChunk {
+  bytes pcm_s16le = 1;
+}
+
+message FinishSession {}
+
+message CancelSession {}
+
+message RecognizeEvent {
+  oneof event {
+    PartialTranscript partial = 1;
+    CommitTranscript commit = 2;
+    EndOfUtterance eou = 3;
+    LanguageDetected language = 4;
+    FinalTranscript final_transcript = 5;
+  }
+}
+
+message PartialTranscript {
+  string committed = 1;
+  string open = 2;
+  string tail = 3;
+}
+
+message CommitTranscript {
+  string text = 1;
+}
+
+message EndOfUtterance {
+  float at_seconds = 1;
+  float probability = 2;
+}
+
+message LanguageDetected {
+  string language = 1;
+}
+
+message FinalTranscript {
+  string text = 1;
+}
+
+message TranscribeRequest {
+  bytes pcm_s16le = 1;
+  string language = 2;
+  string start_language = 3;
+}
+
+message TranscribeResponse {
+  string text = 1;
+  string language = 2;
+}
+
+message ShutdownRequest {}
+
+message ShutdownResponse {}
