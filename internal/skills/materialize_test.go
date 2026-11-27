@@ -146,6 +146,7 @@ func TestPrimeGameDevBuiltinHiddenAndMaterializes(t *testing.T) {
 		"references/game-craft.md",
 		"scripts/package.json",
 		"scripts/extract_frames.mjs",
+		"scripts/run_bounded.mjs",
 		"scripts/web_bot_runner.mjs",
 		"scripts/native_bot_runner.mjs",
 		"scripts/element_capture.mjs",

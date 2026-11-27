@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SpherePrime/CLI/internal/agent/tools"
 	"github.com/SpherePrime/CLI/internal/message"
 	"github.com/SpherePrime/CLI/internal/shell"
 	"github.com/SpherePrime/CLI/vendordeps/fantasy"
@@ -32,6 +33,15 @@ func TestBackgroundJobWakePrompt_CarriesTerminalState(t *testing.T) {
 	require.Contains(t, prompt, "go test ./...")
 	require.Contains(t, prompt, "FAIL package")
 	require.Contains(t, prompt, "Continue the interrupted work")
+}
+
+func TestBackgroundJobWakePrompt_StallWatchdogAlert(t *testing.T) {
+	prompt := backgroundJobWakePrompt("040", "Run Stage B + A + C", "godot --path . res://tests/run.tscn", tools.BackgroundJobStalledExitCode, "SCRIPT ERROR: Parse Error")
+
+	require.Contains(t, prompt, "WARNING: Auto-backgrounded job 040 is STILL RUNNING")
+	require.Contains(t, prompt, "grey/blank GUI or game window")
+	require.Contains(t, prompt, "job_kill on 040")
+	require.Contains(t, prompt, "SCRIPT ERROR: Parse Error")
 }
 
 func TestBackgroundJobWakePrompt_TruncatesLongOutput(t *testing.T) {

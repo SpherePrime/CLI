@@ -78,7 +78,7 @@ func TestGameDevPromptBlockEnabledByRole(t *testing.T) {
 	require.Contains(t, codeBlock, "browser_record_start")
 	require.Contains(t, codeBlock, "targeting ONLY the game's own window")
 	require.Contains(t, codeBlock, "never capture the full computer screen")
-	require.Contains(t, codeBlock, "hard bot timeout")
+	require.Contains(t, codeBlock, "run_bounded.mjs")
 	require.Contains(t, codeBlock, "static/frozen")
 	require.Contains(t, codeBlock, "FPS >= 50")
 	require.Contains(t, codeBlock, "shadow quality")

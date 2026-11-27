@@ -21,6 +21,23 @@ const backgroundWakeOutputLimit = 2000
 // a hidden user message: it drives the next turn without posing as the user.
 func backgroundJobWakePrompt(shellID, description, command string, exitCode int, output string) string {
 	var b strings.Builder
+	if exitCode == tools.BackgroundJobStalledExitCode {
+		fmt.Fprintf(&b, "WARNING: Auto-backgrounded job %s is STILL RUNNING and has produced NO new output recently (possible hung test, frozen grey/blank GUI or game window, or missing exit/quit call).\n", shellID)
+		if description != "" {
+			fmt.Fprintf(&b, "Description: %s\n", description)
+		}
+		if command != "" {
+			fmt.Fprintf(&b, "Command: %s\n", command)
+		}
+		if tail := strings.TrimSpace(output); tail != "" {
+			if len(tail) > backgroundWakeOutputLimit {
+				tail = "… " + tail[len(tail)-backgroundWakeOutputLimit:]
+			}
+			fmt.Fprintf(&b, "\nLast output:\n%s\n", tail)
+		}
+		fmt.Fprintf(&b, "\nThis is an automatic stall watchdog alert, not a message from the user. Inspect the running job immediately. If it is a hung test, game engine (Godot/Unity/etc.), or script stuck on a grey/blank screen or missing quit(), call job_kill on %s right now, diagnose the root cause from stderr/logs, fix it, and re-run with a hard process timeout.", shellID)
+		return b.String()
+	}
 	fmt.Fprintf(&b, "Background job %s finished with exit code %d.\n", shellID, exitCode)
 	if description != "" {
 		fmt.Fprintf(&b, "Description: %s\n", description)
@@ -94,7 +111,11 @@ func (c *coordinator) wakeOnBackgroundJob(sessionID, shellID, description, comma
 			}
 			time.Sleep(backgroundWakeIdlePoll)
 		}
-		if backgroundJobResultSeen(shellID) {
+		if exitCode == tools.BackgroundJobStalledExitCode {
+			if bgShell, ok := shell.GetBackgroundShellManager().Get(shellID); !ok || bgShell.IsDone() {
+				return
+			}
+		} else if backgroundJobResultSeen(shellID) {
 			slog.Debug("Background job wake-up skipped: agent already read the result",
 				"session_id", sessionID, "shell_id", shellID)
 			return

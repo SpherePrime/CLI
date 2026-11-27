@@ -167,3 +167,36 @@ func TestWatchBackgroundJob_TrimsOutputTail(t *testing.T) {
 		require.FailNow(t, "wake-up was not delivered")
 	}
 }
+
+func TestWatchAutoBackgroundJob_WakesOnSilentHang(t *testing.T) {
+	prevTimeout := backgroundStallTimeout
+	prevPoll := backgroundStallPoll
+	backgroundStallTimeout = 150 * time.Millisecond
+	backgroundStallPoll = 40 * time.Millisecond
+	t.Cleanup(func() {
+		backgroundStallTimeout = prevTimeout
+		backgroundStallPoll = prevPoll
+	})
+
+	bgShell, err := shell.GetBackgroundShellManager().Start(
+		context.Background(), t.TempDir(), nil, sleepThenCommand(20, "echo late"), "hung game test")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_ = shell.GetBackgroundShellManager().Kill(bgShell.ID)
+		shell.GetBackgroundShellManager().Remove(bgShell.ID)
+	})
+
+	wakes := make(chan wakeRecord, 4)
+	go watchAutoBackgroundJob(bgShell, "stall-session", func(sessionID, shellID, description, command string, exitCode int, output string) {
+		wakes <- wakeRecord{sessionID, shellID, description, command, exitCode, output}
+	})
+
+	select {
+	case record := <-wakes:
+		require.Equal(t, "stall-session", record.sessionID)
+		require.Equal(t, bgShell.ID, record.shellID)
+		require.Equal(t, BackgroundJobStalledExitCode, record.exitCode)
+	case <-time.After(5 * time.Second):
+		require.FailNow(t, "stall watchdog did not wake the agent for a silent hung background job")
+	}
+}

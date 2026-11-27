@@ -59,7 +59,16 @@ type BackgroundJobWake func(sessionID, shellID, description, command string, exi
 
 // backgroundWakeOutputLimit caps how much of a finished job's output the
 // wake-up prompt carries; job_output still returns the full output.
-const backgroundWakeOutputLimit = 2000
+const (
+	backgroundWakeOutputLimit    = 2000
+	BackgroundJobStalledExitCode = -2
+)
+
+var (
+	backgroundStallTimeout  = 300 * time.Second
+	backgroundStallPoll     = 5 * time.Second
+	backgroundMaxStallWakes = 3
+)
 
 // backgroundJobNotice tells the agent how to hand a background job over to
 // the wake-up watcher instead of polling it.
@@ -402,7 +411,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 			}
 
 			// Still running - keep as background job
-			go watchBackgroundJob(bgShell, sessionID, wake)
+			go watchAutoBackgroundJob(bgShell, sessionID, wake)
 			metadata := BashResponseMetadata{
 				StartTime:        startTime.UnixMilli(),
 				EndTime:          time.Now().UnixMilli(),
@@ -422,16 +431,7 @@ func NewBashTool(permissions permission.Service, workingDir, spillDir string, at
 // reports its terminal state through wake. Jobs killed by job_kill or torn
 // down at shutdown are interrupted, not finished, so they stay silent — the
 // agent decided to stop them and must not be woken for them.
-func watchBackgroundJob(bgShell *shell.BackgroundShell, sessionID string, wake BackgroundJobWake) {
-	if wake == nil {
-		return
-	}
-	<-bgShell.Done()
-	_, _, done, execErr := bgShell.GetOutput()
-	if !done || shell.IsInterrupt(execErr) {
-		return
-	}
-	stdout, stderr, _, _ := bgShell.GetOutput()
+func formatBackgroundWakeOutput(stdout, stderr string) string {
 	output := strings.TrimSpace(stdout)
 	if stderr != "" {
 		if output != "" {
@@ -442,7 +442,70 @@ func watchBackgroundJob(bgShell *shell.BackgroundShell, sessionID string, wake B
 	if len(output) > backgroundWakeOutputLimit {
 		output = "… " + output[len(output)-backgroundWakeOutputLimit:]
 	}
-	wake(sessionID, bgShell.ID, bgShell.Description, bgShell.Command, shell.ExitCode(execErr), output)
+	return output
+}
+
+func watchBackgroundJob(bgShell *shell.BackgroundShell, sessionID string, wake BackgroundJobWake) {
+	if wake == nil {
+		return
+	}
+	<-bgShell.Done()
+	stdout, stderr, done, execErr := bgShell.GetOutput()
+	if !done || shell.IsInterrupt(execErr) {
+		return
+	}
+	wake(sessionID, bgShell.ID, bgShell.Description, bgShell.Command, shell.ExitCode(execErr), formatBackgroundWakeOutput(stdout, stderr))
+}
+
+func watchAutoBackgroundJob(bgShell *shell.BackgroundShell, sessionID string, wake BackgroundJobWake) {
+	if wake == nil {
+		return
+	}
+	stdout, stderr, done, execErr := bgShell.GetOutput()
+	if done {
+		if !shell.IsInterrupt(execErr) {
+			wake(sessionID, bgShell.ID, bgShell.Description, bgShell.Command, shell.ExitCode(execErr), formatBackgroundWakeOutput(stdout, stderr))
+		}
+		return
+	}
+	lastLen := len(stdout) + len(stderr)
+	lastActivity := time.Now()
+	stallsSent := 0
+	poll := backgroundStallPoll
+	if poll <= 0 {
+		poll = 5 * time.Second
+	}
+	ticker := time.NewTicker(poll)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-bgShell.Done():
+			stdout, stderr, done, execErr := bgShell.GetOutput()
+			if !done || shell.IsInterrupt(execErr) {
+				return
+			}
+			wake(sessionID, bgShell.ID, bgShell.Description, bgShell.Command, shell.ExitCode(execErr), formatBackgroundWakeOutput(stdout, stderr))
+			return
+		case <-ticker.C:
+			stdout, stderr, done, _ := bgShell.GetOutput()
+			if done {
+				continue
+			}
+			curLen := len(stdout) + len(stderr)
+			if curLen != lastLen {
+				lastLen = curLen
+				lastActivity = time.Now()
+				stallsSent = 0
+				continue
+			}
+			if backgroundStallTimeout > 0 && time.Since(lastActivity) >= backgroundStallTimeout && stallsSent < backgroundMaxStallWakes {
+				stallsSent++
+				lastActivity = time.Now()
+				wake(sessionID, bgShell.ID, bgShell.Description, bgShell.Command, BackgroundJobStalledExitCode, formatBackgroundWakeOutput(stdout, stderr))
+			}
+		}
+	}
 }
 
 // formatOutput formats the output of a completed command with error handling
