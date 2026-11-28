@@ -81,10 +81,16 @@ export function Popover({
     place()
     const observer = new ResizeObserver(place)
     if (panel.current) observer.observe(panel.current)
+    const onScroll = (event: Event) => {
+      if (panel.current?.contains(event.target as Node)) return
+      place()
+    }
     window.addEventListener('resize', place)
+    window.addEventListener('scroll', onScroll, true)
     return () => {
       observer.disconnect()
       window.removeEventListener('resize', place)
+      window.removeEventListener('scroll', onScroll, true)
     }
   }, [anchor, width, align])
 

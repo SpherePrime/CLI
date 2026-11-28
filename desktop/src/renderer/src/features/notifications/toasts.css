@@ -7,6 +7,9 @@
   flex-direction: column;
   gap: 10px;
   width: min(380px, calc(100vw - 36px));
+  max-height: calc(100vh - var(--topbar-height, 44px) - 36px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   pointer-events: none;
 }
 .toast-card {
@@ -65,6 +68,7 @@
   display: block;
   max-height: 220px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 .toast-actions {
   display: flex;

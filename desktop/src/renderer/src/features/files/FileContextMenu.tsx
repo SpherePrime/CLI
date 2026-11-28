@@ -43,15 +43,21 @@ export function FileContextMenu({
         trigger.current?.focus()
       }
     }
+    const onScroll = (event: Event) => {
+      if (menu.current?.contains(event.target as Node)) return
+      close()
+    }
     document.addEventListener('pointerdown', pointer, true)
     document.addEventListener('keydown', key, true)
     window.addEventListener('blur', close)
     window.addEventListener('resize', close)
+    window.addEventListener('scroll', onScroll, true)
     return () => {
       document.removeEventListener('pointerdown', pointer, true)
       document.removeEventListener('keydown', key, true)
       window.removeEventListener('blur', close)
       window.removeEventListener('resize', close)
+      window.removeEventListener('scroll', onScroll, true)
     }
   }, [close])
   return createPortal(

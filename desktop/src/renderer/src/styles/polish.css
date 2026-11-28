@@ -78,14 +78,14 @@ progress {
 
 .message.user .copy-message {
   top: auto;
-  bottom: -34px;
+  bottom: -28px;
   margin-right: 4px;
 }
 
 .message:not(.user) .copy-message {
   top: auto;
   right: auto;
-  bottom: -34px;
+  bottom: -28px;
   left: 17px;
 }
 

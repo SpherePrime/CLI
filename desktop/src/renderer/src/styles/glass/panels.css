@@ -1,12 +1,16 @@
 .app-shell > .sidebar,
 .app-shell > .project-rail,
 .app-shell > .inspector-rail,
-.app-shell > .inspector:not(.inspector-rail),
-.project-flyout {
+.app-shell > .inspector:not(.inspector-rail) {
   background: var(--glass-rail);
   border-color: var(--glass-edge);
   box-shadow: var(--glass-rim), var(--glass-shadow);
   backdrop-filter: var(--glass-blur);
+}
+.project-flyout {
+  background: var(--glass-solid);
+  border-color: var(--glass-edge);
+  box-shadow: var(--glass-rim), var(--glass-shadow);
 }
 .app-shell > .sidebar,
 .project-flyout {

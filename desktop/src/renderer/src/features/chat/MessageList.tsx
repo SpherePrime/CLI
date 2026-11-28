@@ -16,6 +16,33 @@ import { useHistoryPaging } from './useHistoryPaging'
 import type { HistoryTiming, PageDirection } from './messageWindow'
 import './historyPaging.css'
 
+function isNestedScrollWheel(
+  target: EventTarget | null,
+  container: HTMLElement,
+  deltaY: number
+): boolean {
+  let node = target instanceof HTMLElement ? target : null
+  while (node && node !== container) {
+    const style = getComputedStyle(node)
+    const overflowY = style.overflowY
+    if ((overflowY === 'auto' || overflowY === 'scroll') && node.scrollHeight > node.clientHeight + 1) {
+      const overscrollY = style.overscrollBehaviorY
+      if (overscrollY === 'contain' || overscrollY === 'none') return true
+      if (deltaY < 0 && node.scrollTop > 0) return true
+      if (deltaY > 0 && node.scrollTop + node.clientHeight < node.scrollHeight - 1) return true
+    }
+    node = node.parentElement
+  }
+  return false
+}
+
+function isScrollbarPointer(view: HTMLElement, clientX: number): boolean {
+  const rect = view.getBoundingClientRect()
+  const scale = view.clientWidth > 0 ? rect.width / view.clientWidth : 1
+  const scrollbarWidth = Math.max(0, view.offsetWidth - view.clientWidth) * scale
+  return scrollbarWidth > 0 && clientX >= rect.right - scrollbarWidth - 2
+}
+
 export function MessageList({
   messages,
   busy,
@@ -62,7 +89,10 @@ export function MessageList({
   const followingRef = useRef(true)
   const leavingBottom = useRef(false)
   const programmaticScroll = useRef(false)
+  const programmaticTarget = useRef<number | null>(null)
+  const programmaticFrame = useRef(0)
   const lastScrollTop = useRef(0)
+  const lastMaxScrollTop = useRef(0)
   const hasAfterRef = useRef(hasAfter)
   hasAfterRef.current = hasAfter
   const stable = useRef<Message[]>([])
@@ -135,17 +165,32 @@ export function MessageList({
   const mountedAt = useRef(Date.now())
   const [settled, setSettled] = useState(false)
   const hasMessages = visible.length > 0
+  const markProgrammaticScroll = (view: HTMLElement) => {
+    programmaticScroll.current = true
+    programmaticTarget.current = view.scrollTop
+    lastScrollTop.current = view.scrollTop
+    lastMaxScrollTop.current = Math.max(0, view.scrollHeight - view.clientHeight)
+    paging.syncTop()
+    cancelAnimationFrame(programmaticFrame.current)
+    programmaticFrame.current = requestAnimationFrame(() => {
+      programmaticScroll.current = false
+      programmaticTarget.current = null
+    })
+  }
   const scrollToBottomNow = () => {
     const view = viewport.current
     if (!view) return
-    programmaticScroll.current = true
     view.scrollTop = view.scrollHeight
-    lastScrollTop.current = view.scrollTop
-    paging.syncTop()
-    requestAnimationFrame(() => {
-      programmaticScroll.current = false
-    })
+    markProgrammaticScroll(view)
   }
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(programmaticFrame.current)
+      programmaticScroll.current = false
+      programmaticTarget.current = null
+    },
+    []
+  )
   const paging = useHistoryPaging({
     messages: visible,
     viewport,
@@ -185,14 +230,19 @@ export function MessageList({
     followingRef.current = false
     leavingBottom.current = false
     setFollowing(false)
+    const view = viewport.current
     const row = Array.from(
-      viewport.current?.querySelectorAll<HTMLElement>('[data-message-id]') || []
+      view?.querySelectorAll<HTMLElement>('[data-message-id]') || []
     ).find((element) => element.dataset.messageId === matched.id)
-    row?.scrollIntoView({ block: 'center', behavior: 'auto' })
+    if (row && view) {
+      row.scrollIntoView({ block: 'center', behavior: 'auto' })
+      markProgrammaticScroll(view)
+    }
   }, [searchOpen, matchId, query, visible])
   useLayoutEffect(() => {
     if (paging.restoring.current) return
-    if (followingRef.current && visible.length) scrollToBottomNow()
+    if (hasAfter) followingRef.current = false
+    if (!hasAfter && followingRef.current && visible.length) scrollToBottomNow()
     const view = viewport.current
     if (view) {
       const atBottom = !hasAfter && view.scrollHeight - view.scrollTop - view.clientHeight < 24
@@ -215,9 +265,9 @@ export function MessageList({
   }, [])
   useEffect(() => {
     if (settled || !hasMessages) return
-    if (followingRef.current) scrollToBottomNow()
+    if (!hasAfterRef.current && followingRef.current) scrollToBottomNow()
     const frame = requestAnimationFrame(() => {
-      if (followingRef.current) scrollToBottomNow()
+      if (!hasAfterRef.current && followingRef.current) scrollToBottomNow()
       paging.syncTop()
       setSettled(true)
     })
@@ -257,9 +307,7 @@ export function MessageList({
         <div className="history-status" role="status">
           {historyLoading || searching ? t('Загрузка…') : historyError || searchError}
           {historyError && (
-            <button
-              onClick={() => void paging.page(hasBefore ? 'before' : hasAfter ? 'after' : 'latest')}
-            >
+            <button onClick={() => void paging.retry()}>
               {t('Повторить')}
             </button>
           )}
@@ -272,12 +320,15 @@ export function MessageList({
         tabIndex={0}
         aria-label={t('История чата')}
         onWheel={(event) => {
+          if (event.deltaY === 0) return
+          if (isNestedScrollWheel(event.target, event.currentTarget, event.deltaY)) return
           takeControl(event.deltaY < 0)
-          if (event.deltaY !== 0) paging.onEdge(event.deltaY > 0)
+          paging.onEdge(event.deltaY > 0)
         }}
-        onTouchStart={() => takeControl(true)}
         onPointerDown={(event) => {
-          if (event.target === event.currentTarget) takeControl(true)
+          if (event.target === event.currentTarget && isScrollbarPointer(event.currentTarget, event.clientX)) {
+            takeControl(true)
+          }
         }}
         onKeyDown={(event) => {
           if ((event.target as HTMLElement).closest('button,summary,a,input,textarea,select'))
@@ -298,12 +349,27 @@ export function MessageList({
         onScroll={() => {
           const view = viewport.current!
           const top = view.scrollTop
-          if (programmaticScroll.current || paging.restoring.current) {
+          const maxScrollTop = Math.max(0, view.scrollHeight - view.clientHeight)
+          if (paging.restoring.current) {
             lastScrollTop.current = top
+            lastMaxScrollTop.current = maxScrollTop
             return
           }
-          const scrolledUp = top < lastScrollTop.current - 1
+          if (programmaticScroll.current) {
+            const expected = programmaticTarget.current
+            if (expected !== null && Math.abs(top - expected) <= 2) {
+              lastScrollTop.current = top
+              lastMaxScrollTop.current = maxScrollTop
+              return
+            }
+            programmaticScroll.current = false
+            programmaticTarget.current = null
+            cancelAnimationFrame(programmaticFrame.current)
+          }
+          const clampedByShrink = maxScrollTop < lastMaxScrollTop.current - 1 && top >= maxScrollTop - 2
+          const scrolledUp = !clampedByShrink && top < lastScrollTop.current - 1
           lastScrollTop.current = top
+          lastMaxScrollTop.current = maxScrollTop
           if (scrolledUp) {
             followingRef.current = false
             leavingBottom.current = true
@@ -316,7 +382,7 @@ export function MessageList({
           }
           if (!atBottom && settled) paging.interact()
           paging.onScroll()
-          if (leavingBottom.current && atBottom) {
+          if (leavingBottom.current && atBottom && scrolledUp) {
             setFollowing(true)
             return
           }

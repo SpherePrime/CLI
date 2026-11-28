@@ -80,6 +80,7 @@
 .context-preview {
   max-height: 260px;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 15px;
   border: 1px solid var(--border);
   border-radius: 9px;

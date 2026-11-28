@@ -107,6 +107,7 @@
   display: block;
   max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   border-radius: 10px;
 }
 .markdown th {
@@ -157,25 +158,22 @@
 .prompt-queue,
 .approvals > section,
 .approval-card {
-  background: var(--glass-float);
+  background: var(--glass-solid);
   border-color: color-mix(in srgb, var(--accent) 22%, var(--glass-edge));
   box-shadow: var(--glass-rim), var(--glass-shadow);
-  backdrop-filter: var(--glass-blur);
 }
 
 .welcome-wordmark {
-  background: var(--glass-float);
+  background: var(--glass-solid);
   border-color: color-mix(in srgb, var(--accent) 26%, var(--glass-edge));
   box-shadow:
     var(--glass-rim),
     0 12px 36px var(--glow-soft);
-  backdrop-filter: var(--glass-blur);
 }
 .starter-grid button {
-  background: var(--glass-float);
+  background: var(--glass-solid);
   border-color: var(--glass-edge);
   box-shadow: var(--glass-rim);
-  backdrop-filter: var(--glass-blur);
 }
 .starter-grid button:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--accent) 34%, var(--glass-edge));

@@ -585,6 +585,45 @@ export function WorkflowCanvas({
     })
   }
 
+  useEffect(() => {
+    const stage = stageRef.current
+    if (!stage) return
+    const onWheel = (event: WheelEvent) => {
+      const target = event.target as HTMLElement | null
+      if (target?.closest('.ca-wf-port-menu, .ca-wf-empty-wrap')) return
+      const rect = stage.getBoundingClientRect()
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault()
+        const vp = viewportRef.current
+        const factor = event.deltaY < 0 ? 1.08 : 0.92
+        const nextZoom = Number(Math.min(1.6, Math.max(0.45, vp.zoom * factor)).toFixed(2))
+        const cursorX = event.clientX - rect.left
+        const cursorY = event.clientY - rect.top
+        const worldX = (cursorX - vp.x) / vp.zoom
+        const worldY = (cursorY - vp.y) / vp.zoom
+        const nextVp = {
+          zoom: nextZoom,
+          x: Math.round(cursorX - worldX * nextZoom),
+          y: Math.round(cursorY - worldY * nextZoom)
+        }
+        viewportRef.current = nextVp
+        setViewport(nextVp)
+        return
+      }
+      event.preventDefault()
+      const vp = viewportRef.current
+      const nextVp = {
+        ...vp,
+        x: Math.round(vp.x - event.deltaX),
+        y: Math.round(vp.y - event.deltaY)
+      }
+      viewportRef.current = nextVp
+      setViewport(nextVp)
+    }
+    stage.addEventListener('wheel', onWheel, { passive: false })
+    return () => stage.removeEventListener('wheel', onWheel)
+  }, [])
+
   const roleIcon = (role: string) => {
     if (role === 'orchestrator') return <Sparkles size={14} aria-hidden="true" />
     if (role === 'verifier') return <ShieldCheck size={14} aria-hidden="true" />
@@ -737,38 +776,6 @@ export function WorkflowCanvas({
       <div
         ref={stageRef}
         className={`ca-wf-stage ${isPanning ? 'panning' : ''}`}
-        onWheel={(event) => {
-          const rect = stageRef.current?.getBoundingClientRect()
-          if (!rect) return
-          if (event.ctrlKey || event.metaKey) {
-            event.preventDefault()
-            const vp = viewportRef.current
-            const factor = event.deltaY < 0 ? 1.08 : 0.92
-            const nextZoom = Number(
-              Math.min(1.6, Math.max(0.45, vp.zoom * factor)).toFixed(2)
-            )
-            const cursorX = event.clientX - rect.left
-            const cursorY = event.clientY - rect.top
-            const worldX = (cursorX - vp.x) / vp.zoom
-            const worldY = (cursorY - vp.y) / vp.zoom
-            const nextVp = {
-              zoom: nextZoom,
-              x: Math.round(cursorX - worldX * nextZoom),
-              y: Math.round(cursorY - worldY * nextZoom)
-            }
-            viewportRef.current = nextVp
-            setViewport(nextVp)
-            return
-          }
-          const vp = viewportRef.current
-          const nextVp = {
-            ...vp,
-            x: Math.round(vp.x - event.deltaX),
-            y: Math.round(vp.y - event.deltaY)
-          }
-          viewportRef.current = nextVp
-          setViewport(nextVp)
-        }}
         onPointerDown={(event) => {
           const target = event.target as HTMLElement
           if (

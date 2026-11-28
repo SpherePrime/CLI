@@ -92,7 +92,7 @@ export function WorkbenchDock({
           0,
           ((element.closest('.app-shell') as HTMLElement | null)?.clientHeight ??
             parent.clientHeight) -
-            fixed().reduce((sum, item) => sum + item.getBoundingClientRect().height, 0) -
+            fixed().reduce((sum, item) => sum + item.offsetHeight, 0) -
             minimumConversation
         )
       )

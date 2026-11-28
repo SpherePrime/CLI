@@ -13,6 +13,7 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
+  flex-shrink: 0;
   gap: 8px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
@@ -43,7 +44,9 @@
   font-variant-numeric: tabular-nums;
 }
 .automation-content {
+  flex: 1 1 auto;
   overflow: auto;
+  overscroll-behavior: contain;
   min-height: 0;
   padding: 14px;
   scrollbar-gutter: stable;
@@ -122,6 +125,7 @@
   overflow-wrap: anywhere;
   max-height: 80px;
   overflow: auto;
+  overscroll-behavior: contain;
   margin: 10px 0;
 }
 .automation-schedule {

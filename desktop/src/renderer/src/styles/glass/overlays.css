@@ -1,11 +1,15 @@
 .prime-popover,
 .file-context-menu,
-.select-options,
-.composer .suggestions {
+.select-options {
   background: var(--glass-overlay);
   border-color: var(--glass-edge-strong);
   box-shadow: var(--glass-rim), var(--glass-shadow-float);
   backdrop-filter: var(--glass-blur-strong);
+}
+.composer .suggestions {
+  background: var(--glass-solid);
+  border-color: var(--glass-edge-strong);
+  box-shadow: var(--glass-rim), var(--glass-shadow-float);
 }
 .prime-popover.model-picker-popover {
   background: color-mix(in srgb, var(--surface) 96%, var(--bg));

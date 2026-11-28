@@ -62,7 +62,7 @@
 }
 
 .tool-exec-heading {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text);
@@ -648,11 +648,14 @@
   line-height: 1.58;
   max-height: 360px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .tool-diff-line {
   display: grid;
-  grid-template-columns: 32px 32px 16px minmax(0, 1fr);
+  grid-template-columns: 32px 32px 16px max-content;
+  min-width: 100%;
+  width: max-content;
   padding: 0 12px 0 6px;
   white-space: pre;
 }
@@ -779,6 +782,7 @@
   word-break: break-word;
   max-height: 320px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .tool-terminal-out.is-error {
@@ -833,6 +837,7 @@
   white-space: pre-wrap;
   max-height: 180px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 /* Search chips & Key-value params */
@@ -849,6 +854,8 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  max-width: 100%;
+  min-width: 0;
   padding: 2px 7px;
   border-radius: 6px;
   border: 1px solid var(--border);
@@ -858,11 +865,14 @@
 
 .tool-param-chip-key {
   color: var(--muted);
+  flex-shrink: 0;
 }
 
 .tool-param-chip code {
   font-family: var(--mono);
   color: var(--text);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .tool-kv-list {
@@ -872,6 +882,7 @@
   padding: 8px 11px;
   max-height: 220px;
   overflow: auto;
+  overscroll-behavior: contain;
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 75%, var(--bg));
 }
@@ -899,6 +910,7 @@
   word-break: break-word;
   max-height: 120px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .tool-generic-out .tool-terminal-out {
@@ -912,6 +924,7 @@
   padding: 6px 8px;
   max-height: 210px;
   overflow: auto;
+  overscroll-behavior: contain;
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg) 82%, var(--surface));
 }

@@ -387,6 +387,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -711,6 +712,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 16px 18px;
 }
 
@@ -1095,6 +1097,7 @@
   min-width: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
   padding: 12px 14px 20px;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -2162,6 +2165,7 @@
   gap: 4px;
   max-height: 220px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .ca-wf-port-menu-item,

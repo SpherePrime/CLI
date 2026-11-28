@@ -58,6 +58,7 @@
 }
 .patch-code {
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   background: var(--bg);
   border-top: 1px solid var(--border);
   font-family: var(--mono, monospace);
@@ -135,6 +136,7 @@
   padding: 14px;
   margin: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;

@@ -143,6 +143,7 @@
   margin: 0;
   padding: 4px 16px 14px 14px;
   overflow: auto;
+  overscroll-behavior: contain;
   list-style: none;
   animation: fade-in var(--medium) ease;
 }
@@ -193,7 +194,10 @@
   box-shadow: 0 0 0 4px #ff6a351f;
 }
 .todo-content {
+  flex: 1;
+  min-width: 0;
   padding-top: 2px;
+  overflow-wrap: anywhere;
 }
 .todo-timeline li.in_progress .todo-content {
   color: var(--text);

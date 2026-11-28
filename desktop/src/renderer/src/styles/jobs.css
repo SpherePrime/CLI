@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  min-height: 420px;
+  min-height: min(420px, calc(85vh - 80px));
 }
 .jobs-toolbar {
   display: flex;
@@ -58,8 +58,10 @@
   padding: 0;
   display: grid;
   gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
-  max-height: 60vh;
+  overscroll-behavior: contain;
 }
 .job {
   display: grid;

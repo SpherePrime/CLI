@@ -28,6 +28,7 @@ export function CommandPalette({
   const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
+  const scrollOnSelect = useRef(false)
   const input = useRef<HTMLInputElement>(null)
   const list = useRef<HTMLDivElement>(null)
   const listId = useId()
@@ -54,6 +55,8 @@ export function CommandPalette({
   ]
   const active = Math.min(selected, Math.max(0, items.length - 1))
   useEffect(() => {
+    if (!scrollOnSelect.current) return
+    scrollOnSelect.current = false
     list.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' })
   }, [active, query])
   function execute(index: number) {
@@ -88,6 +91,7 @@ export function CommandPalette({
           onKeyDown={(event) => {
             if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
               event.preventDefault()
+              scrollOnSelect.current = true
               setSelected(
                 items.length
                   ? (active + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length
@@ -116,7 +120,10 @@ export function CommandPalette({
             role="option"
             aria-selected={index === active}
             tabIndex={-1}
-            onPointerMove={() => setSelected(index)}
+            onPointerMove={() => {
+              scrollOnSelect.current = false
+              setSelected(index)
+            }}
             onClick={() => execute(index)}
           >
             <span className="command-icon">

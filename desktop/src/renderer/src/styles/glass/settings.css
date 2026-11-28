@@ -15,11 +15,12 @@ dialog.modal.settings-modal {
 }
 
 .settings-modal .settings-layout > nav {
-  width: 232px;
   padding: 14px 10px;
   gap: 2px;
   background: color-mix(in srgb, var(--text) 2.5%, transparent);
   border-right: 1px solid var(--glass-edge);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .settings-modal .settings-layout > nav button {
   position: relative;

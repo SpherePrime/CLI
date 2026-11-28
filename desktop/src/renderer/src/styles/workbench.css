@@ -473,6 +473,7 @@
 }
 .picker-list {
   overflow-y: auto;
+  overscroll-behavior: contain;
   max-height: 280px;
   display: flex;
   flex-direction: column;

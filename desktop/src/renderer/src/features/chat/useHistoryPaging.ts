@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { PageDirection } from './messageWindow'
 import type { MergedMessage } from './toolGroupMerge'
 
@@ -34,9 +34,18 @@ export function useHistoryPaging({
   const interacted = useRef(false)
   const frame = useRef(0)
   const pending = useRef(false)
+  const lastDirection = useRef<PageDirection>('latest')
   const [pageSettled, setPageSettled] = useState(0)
 
-  function capture() {
+  useEffect(
+    () => () => {
+      cancelAnimationFrame(frame.current)
+      restoring.current = false
+    },
+    []
+  )
+
+  function capture(preserveBounds = false) {
     const view = viewport.current
     if (!view) return
     const bounds = view.getBoundingClientRect()
@@ -44,19 +53,21 @@ export function useHistoryPaging({
     const row = rows.find((element) => element.getBoundingClientRect().bottom > bounds.top + 1)
     if (row?.dataset.messageId) {
       const rect = row.getBoundingClientRect()
+      const previous = preserveBounds ? anchor.current : null
       anchor.current = {
         id: row.dataset.messageId,
         offsetTop: rect.top - bounds.top,
         offsetBottom: rect.bottom - bounds.top,
         scrollHeight: view.scrollHeight,
-        first: messages[0]?.id,
-        last: messages.at(-1)?.id
+        first: previous ? previous.first : messages[0]?.id,
+        last: previous ? previous.last : messages.at(-1)?.id
       }
     }
   }
 
   async function page(direction: PageDirection) {
     if (!load || pending.current || loading) return
+    lastDirection.current = direction
     pending.current = true
     stopFollowing()
     if (direction !== 'latest') capture()
@@ -88,14 +99,16 @@ export function useHistoryPaging({
         (element) => element.dataset.messageId === matched.id
       )
       if (row) {
-        const viewTop = view.getBoundingClientRect().top
+        const viewRect = view.getBoundingClientRect()
+        const scale = view.clientHeight > 0 ? viewRect.height / view.clientHeight : 1
         const rect = row.getBoundingClientRect()
         const mergedAtTop = matched.id !== saved.id
         const delta = mergedAtTop
-          ? rect.bottom - viewTop - saved.offsetBottom
-          : rect.top - viewTop - saved.offsetTop
-        if (Math.abs(delta) >= 0.5) {
-          view.scrollTop += delta
+          ? rect.bottom - viewRect.top - saved.offsetBottom
+          : rect.top - viewRect.top - saved.offsetTop
+        const unzoomedDelta = scale > 0 ? delta / scale : delta
+        if (Math.abs(unzoomedDelta) >= 0.5) {
+          view.scrollTop += unzoomedDelta
         }
       } else {
         const heightDelta = view.scrollHeight - saved.scrollHeight
@@ -113,11 +126,11 @@ export function useHistoryPaging({
       restoring.current = false
       if (viewport.current) lastTop.current = viewport.current.scrollTop
     })
-    return () => cancelAnimationFrame(frame.current)
   }, [messages[0]?.id, messages.at(-1)?.id, pageSettled])
 
   return {
     page,
+    retry: () => page(lastDirection.current),
     restoring,
     interact: () => {
       interacted.current = true
@@ -138,6 +151,10 @@ export function useHistoryPaging({
       if (!view) return
       const delta = view.scrollTop - lastTop.current
       lastTop.current = view.scrollTop
+      if (pending.current && anchor.current && !restoring.current) {
+        capture(true)
+        return
+      }
       if (!settled || !interacted.current || restoring.current || pending.current || loading) return
       if (delta < 0 && view.scrollTop < 500 && hasBefore) void page('before')
       else if (

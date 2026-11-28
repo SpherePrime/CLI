@@ -39,6 +39,7 @@
   z-index: 1;
   max-height: 76px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: none;
   -ms-overflow-style: none;
   font-size: 13.8px;

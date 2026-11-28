@@ -32,7 +32,7 @@
   -webkit-app-region: no-drag;
 }
 .app-shell {
-  height: calc(100vh - var(--topbar-height));
+  height: calc((100vh - var(--topbar-height)) / var(--layout-zoom, 1));
 }
 
 .workspace-topbar {
@@ -156,7 +156,7 @@
   margin: 0 4px;
   background: var(--border);
 }
-@media (min-width: 961px) {
+@media (min-width: 1280px) {
   .topbar-search {
     position: absolute;
     left: 50%;
@@ -479,11 +479,11 @@
     max-height: calc(100vh - 24px);
   }
   .settings-modal > header {
-    height: 56px;
+    min-height: 56px;
     padding: 0 16px 0 20px;
   }
   .settings-modal > .modal-content {
-    height: calc(100% - 56px);
+    height: auto;
   }
   .settings-modal .settings-layout {
     display: flex;

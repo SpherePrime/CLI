@@ -195,6 +195,7 @@
   margin: 0;
   max-height: 140px;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -227,6 +228,7 @@
   margin: 0;
   padding: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   list-style: none;
 }
 .goal-stages > li {

@@ -1,7 +1,9 @@
 .launch-layout {
   display: grid;
   grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
+  overflow: hidden;
   flex: 1;
 }
 .launch-editor-modal {
@@ -40,7 +42,9 @@
 .launch-list {
   border-right: 1px solid var(--border);
   padding: 10px;
+  min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   display: grid;
   align-content: start;
   gap: 6px;
@@ -88,6 +92,8 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .launch-toolbar,
 .launch-url,
@@ -101,6 +107,7 @@
 .launch-toolbar {
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .launch-state {
   color: var(--secondary);
@@ -115,6 +122,7 @@
   padding: 8px 12px;
   border-bottom: 1px solid var(--border);
   color: var(--accent);
+  flex-shrink: 0;
 }
 .launch-url span {
   overflow: hidden;
@@ -143,6 +151,7 @@
   padding: 10px 12px;
   display: grid;
   gap: 8px;
+  flex-shrink: 0;
 }
 .launch-diagnostics ul {
   list-style: none;
@@ -150,6 +159,7 @@
   padding: 0;
   max-height: 96px;
   overflow: auto;
+  overscroll-behavior: contain;
   display: grid;
   gap: 3px;
   font-family: var(--mono, ui-monospace, monospace);
@@ -176,6 +186,7 @@
 @media (max-width: 760px) {
   .launch-layout {
     grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
   }
   .launch-list {
     border-right: 0;

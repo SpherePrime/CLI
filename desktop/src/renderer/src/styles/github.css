@@ -1,12 +1,16 @@
 .github-layout {
   display: grid;
   grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
+  overflow: hidden;
   flex: 1;
 }
 .github-list {
   border-right: 1px solid var(--border);
+  min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 8px;
   display: grid;
   align-content: start;
@@ -58,7 +62,9 @@
   color: var(--secondary);
 }
 .github-detail {
+  min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 14px;
   min-width: 0;
 }
@@ -98,6 +104,7 @@
   font-size: 11px;
   max-height: 260px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 .github-diff {
   white-space: pre;
@@ -272,6 +279,7 @@
 @media (max-width: 760px) {
   .github-layout {
     grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
   }
   .github-list {
     border-right: 0;

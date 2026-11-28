@@ -132,6 +132,10 @@
   bottom: 0;
   flex-direction: column;
   overflow: auto;
+  overscroll-behavior: contain;
+}
+.inspector-rail.panel-open > .inspector-content:not([hidden]):not(.agents-content) {
+  display: block;
 }
 .inspector-rail.panel-open:has(.inspector-footer) > .inspector-content,
 .inspector-rail.panel-open:has(.inspector-footer) > .panel-failure {

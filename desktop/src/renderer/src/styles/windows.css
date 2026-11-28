@@ -79,12 +79,16 @@
 .windows-layout {
   display: grid;
   grid-template-columns: minmax(200px, 30%) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
+  overflow: hidden;
   flex: 1;
 }
 .windows-list {
   border-right: 1px solid var(--border);
+  min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 10px;
   display: grid;
   align-content: start;
@@ -152,7 +156,9 @@
   font-size: 10px;
 }
 .windows-detail {
+  min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   min-width: 0;
   padding: 16px;
   display: grid;
@@ -288,6 +294,7 @@
 @media (max-width: 760px) {
   .windows-layout {
     grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
   }
   .windows-list {
     border-right: 0;

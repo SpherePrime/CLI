@@ -60,11 +60,17 @@ export function SidebarChats({
     const key = (event: KeyboardEvent) => {
       handleContextMenuKeyDown(event, () => setMenu(null))
     }
+    const onScroll = (event: Event) => {
+      if ((event.target as Element | null)?.closest?.('.context-menu')) return
+      setMenu(null)
+    }
     document.addEventListener('pointerdown', pointer)
     document.addEventListener('keydown', key, true)
+    window.addEventListener('scroll', onScroll, true)
     return () => {
       document.removeEventListener('pointerdown', pointer)
       document.removeEventListener('keydown', key, true)
+      window.removeEventListener('scroll', onScroll, true)
     }
   }, [menu])
   const needle = search.trim().toLocaleLowerCase()

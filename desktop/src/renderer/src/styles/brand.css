@@ -296,6 +296,7 @@
   display: flex;
   flex-direction: column;
   overflow: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
@@ -329,6 +330,7 @@
 .select-options {
   padding: 2px;
   overflow: auto;
+  overscroll-behavior: contain;
   max-height: 300px;
 }
 .select-options button {
@@ -395,6 +397,7 @@
   max-height: 312px;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
   flex: 1 1 auto;
   padding: 0 2px;
 }
@@ -498,6 +501,7 @@
 .action-list {
   max-height: 380px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 .action-list button {
   width: 100%;
@@ -546,13 +550,15 @@ input[type='number'] {
 }
 .settings-modal > .modal-content {
   padding: 0;
-  height: calc(100% - 68px);
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: none;
   overflow: hidden;
 }
 .settings-modal .settings-layout {
   height: 100%;
-  grid-template-columns: 215px minmax(0, 1fr);
+  grid-template-columns: 232px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   gap: 0;
 }
 .settings-modal .settings-layout > nav {
@@ -568,6 +574,7 @@ input[type='number'] {
 }
 .settings-modal .settings-body {
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 30px 36px;
   font-size: 14px;
 }
@@ -670,6 +677,7 @@ input[type='number'] {
 }
 .provider-model-tabs {
   overflow: auto;
+  overscroll-behavior: contain;
   max-height: 370px;
   padding: 8px;
   background: var(--bg);
@@ -728,7 +736,7 @@ input[type='number'] {
     max-height: calc(100vh - 60px);
   }
   .settings-modal .settings-layout {
-    grid-template-columns: 175px minmax(0, 1fr);
+    grid-template-columns: 184px minmax(0, 1fr);
   }
   .settings-modal .settings-body {
     padding: 24px;
@@ -1169,17 +1177,6 @@ input[type='number'] {
     --sidebar-width: 220px;
   }
 }
-@media (max-width: 1100px) {
-  .app-shell.has-editor {
-    grid-template-columns: minmax(280px, 1fr) 1px minmax(360px, var(--editor-fraction));
-  }
-  .has-editor > .sidebar,
-  .has-editor > .left-resizer,
-  .has-editor > .inspector,
-  .has-editor > .right-resizer {
-    display: none;
-  }
-}
 .tool-section {
   border-top: 1px solid var(--border);
   padding: 12px 14px;
@@ -1243,6 +1240,7 @@ input[type='number'] {
   padding: 0 14px 4px;
   max-height: 210px;
   overflow: auto;
+  overscroll-behavior: contain;
 }
 .prompt-queue li {
   display: flex;
@@ -1470,11 +1468,13 @@ input[type='number'] {
   overflow-wrap: anywhere;
   max-height: min(70vh, 720px);
   overflow: auto;
+  overscroll-behavior: contain;
   font-size: 13px;
   line-height: 1.65;
 }
 .settings-modal .settings-layout > nav {
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 @media (max-width: 1000px) {
   .integration-secret {
@@ -1497,14 +1497,19 @@ input[type='number'] {
   inset: var(--topbar-height, 44px) 0 0;
   z-index: 150;
   display: grid;
-  place-items: center;
+  place-items: safe center;
   padding: 28px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: radial-gradient(ellipse at center, #101010aa, #101010e8);
   backdrop-filter: blur(12px);
-  pointer-events: none;
+  pointer-events: auto;
 }
 .update-card {
   width: min(100%, 520px);
+  max-height: calc(100vh - var(--topbar-height, 44px) - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 36px;
   border: 1px solid var(--border);
   border-radius: 24px;
