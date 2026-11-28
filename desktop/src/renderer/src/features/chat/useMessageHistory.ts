@@ -176,14 +176,13 @@ export function useMessageHistory() {
               : {})
         })) as MessagePage
         if (request.current !== token || current.current.id !== sessionId) return
-        commit(
-          sessionId,
-          mergeMessagePage(
-            direction === 'latest' ? undefined : current.current.page,
-            result,
-            direction
-          )
-        )
+        const previous =
+          direction === 'latest'
+            ? current.current.page.has_after || !current.current.page.messages.length
+              ? undefined
+              : current.current.page
+            : current.current.page
+        commit(sessionId, mergeMessagePage(previous, result, direction))
       } catch (error) {
         if (request.current === token) setError(String((error as Error).message || error))
       } finally {

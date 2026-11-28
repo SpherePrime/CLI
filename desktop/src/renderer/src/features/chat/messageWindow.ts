@@ -1,6 +1,8 @@
 import type { Message } from '../../../../shared/contracts'
 import { applyMessage } from '../../../../shared/messages'
+import { consolidateToolMessages } from '../../../../shared/toolMessages'
 import { isConversationPrompt } from './conversationTiming'
+import { mergeConsecutiveToolMessages } from './toolGroupMerge'
 
 export type HistoryTiming = { started_at?: number; completed: Record<string, number> }
 export type MessagePage = {
@@ -11,6 +13,58 @@ export type MessagePage = {
 }
 export type PageDirection = 'latest' | 'before' | 'after'
 export const historyWindowLimit = 180
+const maxRawHistoryMessages = 2400
+
+function trimHistoryWindow(
+  messages: Message[],
+  keepFrom: 'start' | 'end'
+): { messages: Message[]; trimmed: boolean } {
+  if (messages.length <= historyWindowLimit) {
+    return { messages, trimmed: false }
+  }
+
+  const visible = mergeConsecutiveToolMessages(consolidateToolMessages(messages))
+  if (visible.length > historyWindowLimit) {
+    if (keepFrom === 'start') {
+      const boundary = visible[historyWindowLimit - 1]
+      const lastId = boundary._mergedIds?.at(-1) ?? boundary.id
+      let endIndex = messages.findIndex((item) => item.id === lastId)
+      if (endIndex >= 0) {
+        while (messages[endIndex + 1]?.role === 'tool') {
+          endIndex += 1
+        }
+        const bounded = messages.slice(0, endIndex + 1)
+        const result =
+          bounded.length > maxRawHistoryMessages
+            ? bounded.slice(0, maxRawHistoryMessages)
+            : bounded
+        return { messages: result, trimmed: result.length < messages.length }
+      }
+    } else {
+      const boundary = visible[visible.length - historyWindowLimit]
+      const firstId = boundary._mergedIds?.[0] ?? boundary.id
+      const startIndex = messages.findIndex((item) => item.id === firstId)
+      if (startIndex >= 0) {
+        const bounded = messages.slice(startIndex)
+        const result =
+          bounded.length > maxRawHistoryMessages
+            ? bounded.slice(-maxRawHistoryMessages)
+            : bounded
+        return { messages: result, trimmed: result.length < messages.length }
+      }
+    }
+  }
+
+  if (messages.length > maxRawHistoryMessages) {
+    const result =
+      keepFrom === 'start'
+        ? messages.slice(0, maxRawHistoryMessages)
+        : messages.slice(-maxRawHistoryMessages)
+    return { messages: result, trimmed: true }
+  }
+
+  return { messages, trimmed: false }
+}
 
 export function mergeMessagePage(
   current: MessagePage | undefined,
@@ -38,11 +92,9 @@ export function mergeMessagePage(
       ...existing.map((message) => incoming.get(message.id) || message),
       ...page.messages.filter((message) => !existing.some((item) => item.id === message.id))
     ]
-  const trimmed = messages.length > historyWindowLimit
-  messages =
-    direction === 'before'
-      ? messages.slice(0, historyWindowLimit)
-      : messages.slice(-historyWindowLimit)
+  const trimmedResult = trimHistoryWindow(messages, direction === 'before' ? 'start' : 'end')
+  messages = trimmedResult.messages
+  const trimmed = trimmedResult.trimmed
   const completed = { ...current?.timing.completed, ...page.timing?.completed }
   const retained = new Set(messages.map((message) => message.id))
   return {
@@ -102,14 +154,15 @@ export function updateHistoryMessage(
   ) {
     timing.completed[message.id] = Math.max(0, Math.floor(finish.time - timing.started_at))
   }
-  const retained = messages.slice(-historyWindowLimit)
+  const { messages: retained, trimmed } = trimHistoryWindow(messages, 'end')
+  const retainedIds = new Set(retained.map((item) => item.id))
   timing.completed = Object.fromEntries(
-    Object.entries(timing.completed).filter(([id]) => retained.some((message) => message.id === id))
+    Object.entries(timing.completed).filter(([id]) => retainedIds.has(id))
   )
   return {
     ...window,
     timing,
     messages: retained,
-    has_before: window.has_before || messages.length > historyWindowLimit
+    has_before: window.has_before || trimmed
   }
 }

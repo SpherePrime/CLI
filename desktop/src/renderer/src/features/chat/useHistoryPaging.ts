@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { PageDirection } from './messageWindow'
 import type { MergedMessage } from './toolGroupMerge'
 
@@ -34,6 +34,7 @@ export function useHistoryPaging({
   const interacted = useRef(false)
   const frame = useRef(0)
   const pending = useRef(false)
+  const [pageSettled, setPageSettled] = useState(0)
 
   function capture() {
     const view = viewport.current
@@ -64,6 +65,7 @@ export function useHistoryPaging({
       await load(direction)
     } finally {
       pending.current = false
+      setPageSettled((count) => count + 1)
     }
   }
 
@@ -71,7 +73,10 @@ export function useHistoryPaging({
     const saved = anchor.current
     const view = viewport.current
     if (!saved || !view) return
-    if (saved.first === messages[0]?.id && saved.last === messages.at(-1)?.id) return
+    if (saved.first === messages[0]?.id && saved.last === messages.at(-1)?.id) {
+      if (!pending.current) anchor.current = null
+      return
+    }
 
     const matched = messages.find(
       (message) => message.id === saved.id || Boolean(message._mergedIds?.includes(saved.id))
@@ -109,7 +114,7 @@ export function useHistoryPaging({
       if (viewport.current) lastTop.current = viewport.current.scrollTop
     })
     return () => cancelAnimationFrame(frame.current)
-  }, [messages[0]?.id, messages.at(-1)?.id])
+  }, [messages[0]?.id, messages.at(-1)?.id, pageSettled])
 
   return {
     page,

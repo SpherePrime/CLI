@@ -63,6 +63,8 @@ export function MessageList({
   const leavingBottom = useRef(false)
   const programmaticScroll = useRef(false)
   const lastScrollTop = useRef(0)
+  const hasAfterRef = useRef(hasAfter)
+  hasAfterRef.current = hasAfter
   const stable = useRef<Message[]>([])
   const timing = useMemo(() => {
     const local = conversationTiming(messages, historyTiming?.started_at)
@@ -202,13 +204,10 @@ export function MessageList({
     const view = viewport.current
     const content = contentRef.current
     if (!view || !content) return
-    let lastHeight = view.clientHeight
     const observer = new ResizeObserver(() => {
-      const height = view.clientHeight
-      const shrunk = height < lastHeight
-      lastHeight = height
-      if (paging.restoring.current || !followingRef.current) return
-      if (shrunk || followingRef.current) scrollToBottomNow()
+      if (paging.restoring.current || !followingRef.current || hasAfterRef.current) return
+      scrollToBottomNow()
+      setFollowing(true)
     })
     observer.observe(view)
     observer.observe(content)
@@ -299,14 +298,23 @@ export function MessageList({
         onScroll={() => {
           const view = viewport.current!
           const top = view.scrollTop
-          const scrolledUp = !programmaticScroll.current && !paging.restoring.current && top < lastScrollTop.current - 1
+          if (programmaticScroll.current || paging.restoring.current) {
+            lastScrollTop.current = top
+            return
+          }
+          const scrolledUp = top < lastScrollTop.current - 1
           lastScrollTop.current = top
           if (scrolledUp) {
             followingRef.current = false
             leavingBottom.current = true
           }
           const atBottom = !hasAfter && view.scrollHeight - top - view.clientHeight < 24
-          if (!atBottom && settled && !paging.restoring.current) paging.interact()
+          if (!atBottom && followingRef.current && !scrolledUp && !leavingBottom.current && !hasAfter) {
+            scrollToBottomNow()
+            setFollowing(true)
+            return
+          }
+          if (!atBottom && settled) paging.interact()
           paging.onScroll()
           if (leavingBottom.current && atBottom) {
             setFollowing(true)
